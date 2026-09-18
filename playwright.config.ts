@@ -1,0 +1,2 @@
+import {defineConfig,devices} from '@playwright/test';
+export default defineConfig({testDir:'./e2e',fullyParallel:false,workers:1,reporter:'list',use:{baseURL:'http://localhost:4173',...devices['iPhone 13'],defaultBrowserType:'chromium',browserName:'chromium',channel:process.env.PLAYWRIGHT_CHANNEL||undefined,trace:'retain-on-failure'},webServer:{command:'npm run preview -- --port 4173',url:'http://localhost:4173',reuseExistingServer:true},projects:[{name:'mobile-chromium',use:{browserName:'chromium'}}]});
