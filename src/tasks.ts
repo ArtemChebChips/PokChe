@@ -1,34 +1,303 @@
-import {deck,ranks,suits,evaluate,compare,names,potOdds,spr,handLabel,equity,preflopOrder,postflopOrder} from './poker';
-import {type Skill,skillNames} from './content';
-export type Task={id:string;skill:Skill;title:string;prompt:string;cards?:string[];board?:string[];opponent?:string[];choices:string[];answer:string;explanation:string;hint:string;details?:string;category:'exact';selection?:boolean;context?:string};
-export const allSkills=Object.keys(skillNames) as Skill[];
-export function shuffle<T>(input:T[]):T[]{const a=[...input];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
-const pick=<T,>(a:T[])=>a[Math.floor(Math.random()*a.length)];
-const fmt=(n:number)=>Number(n.toFixed(1)).toLocaleString('ru-RU');
-export function generate(skill:Skill):Task{
- const t:Task={id:crypto.randomUUID(),skill,title:skillNames[skill],prompt:'',choices:[],answer:'',explanation:'',hint:'',category:'exact'};
- const options=(answer:string,others:string[])=>{t.answer=answer;t.choices=shuffle([answer,...shuffle([...new Set(others)].filter(x=>x!==answer)).slice(0,3)]);};
- if(skill==='cards'){
-  const cards=shuffle(deck).slice(0,2);t.cards=cards;t.prompt='Какая карта старше по достоинству?';const diff=ranks.indexOf(cards[0][0])-ranks.indexOf(cards[1][0]);options(diff===0?'Равны':diff>0?'Левая':'Правая',['Левая','Правая','Равны']);t.hint='Масти равны. Туз старше короля.';t.explanation='Порядок: 2–3–4–5–6–7–8–9–T–J–Q–K–A. Масть не даёт преимущества.';
- }else if(skill==='combination'||skill==='best'){
-  t.cards=shuffle(deck).slice(0,7);const result=evaluate(t.cards);t.prompt=skill==='best'?'Выберите лучшую пятёрку из семи карт.':'Какая лучшая комбинация в этих семи картах?';t.selection=skill==='best';options(result.name,names);t.hint='Итоговая рука состоит ровно из пяти карт.';t.explanation=`Лучшая комбинация: ${result.name.toLowerCase()}. Учитываются только пять карт; шестая и седьмая не решают исход.`;t.details=`Один из лучших наборов: ${result.best.join(' ')}. Порядок внутри пятёрки не важен.`;
- }else if(skill==='winner'){
-  const cards=shuffle(deck).slice(0,9);t.cards=cards.slice(0,2);t.opponent=cards.slice(2,4);t.board=cards.slice(4);const a=evaluate([...t.cards,...t.board]),b=evaluate([...t.opponent,...t.board]);const c=compare(a.score,b.score);options(c===0?'Делёж':c>0?'Вы':'Соперник',['Вы','Соперник','Делёж']);t.prompt='Вскрытие. Кому достанется банк?';t.hint='Сравните лучшие пятёрки, затем кикеры.';t.explanation=`У вас: ${a.name.toLowerCase()}. У соперника: ${b.name.toLowerCase()}. ${c===0?'Лучшие пятёрки равны — банк делится.':'При равной категории сравниваются достоинства и кикеры по порядку.'}`;t.details=`Ваша пятёрка: ${a.best.join(' ')}. Соперник: ${b.best.join(' ')}.`;
- }else if(skill==='order'){
-  const pre=Math.random()<.5;const order=pre?preflopOrder:postflopOrder;const index=Math.floor(Math.random()*5);t.prompt=`6-max, все игроки в раздаче. ${pre?'Префлоп':'Флоп'}: кто действует сразу после ${order[index]} в первом круге?`;options(order[index+1],order);t.hint=pre?'На префлопе начинают слева от BB.':'После флопа начинают слева от BTN.';t.explanation=`Очередь: ${order.join(' → ')}. Выбывших игроков пропускают.`;
- }else if(skill==='stack'||skill==='spr'){
-  const a=pick([20,30,40,60,80,100]),b=pick([25,40,50,75,100,120]),pot=pick([5,10,20]);t.context=`Один на один · в банке ${pot} BB`;t.prompt=`У вас осталось ${a} BB, у соперника ${b} BB. ${skill==='stack'?'Какой эффективный оставшийся стек?':'Чему равен SPR?'}`;const result=skill==='stack'?Math.min(a,b):spr(a,b,pot);const unit=skill==='stack'?' BB':'';options(fmt(result)+unit,[a+b,a,b,result+1,result*2,result/2].map(x=>fmt(x)+unit));t.hint=skill==='stack'?'Возьмите меньший стек.':'SPR = меньший оставшийся стек ÷ банк.';t.explanation=skill==='stack'?`min(${a}, ${b}) = ${result} BB. Больше у короткого стека выиграть нельзя.`:`min(${a}, ${b}) ÷ ${pot} = ${fmt(result)}. Здесь используем оставшиеся стеки, а не стартовые.`;
- }else if(skill==='notation'){
-  t.cards=shuffle(deck).slice(0,2);const label=handLabel(t.cards),base=label.slice(0,2);t.prompt='Как записать эту стартовую руку?';options(label,[base+'s',base+'o',base,base[0]+base[0],base[1]+base[1]]);t.hint='s — одна масть, o — разные. У пары суффикса нет.';t.explanation=`${label}: ${label.length===2?'карманная пара':label.endsWith('s')?'одномастная рука (suited)':'разномастная рука (offsuit)'}. Старшее достоинство пишется первым.`;
- }else if(skill==='odds'){
-  const original=pick([10,20,30,40,60]),bet=pick([5,10,15,20,30]),pot=original+bet,answer=potOdds(pot,bet);t.context='Один на один · олл-ин · без комиссии';t.prompt=`В банке было ${original} BB. Соперник поставил олл-ин ${bet} BB. Вам нужно добавить ${bet} BB для колла. Какой порог эквити?`;options(fmt(answer)+'%',[10,20,25,33.3,40,50,bet/pot*100].map(x=>fmt(x)+'%'));t.hint='В знаменателе — банк после вашего колла.';t.explanation=`${bet} ÷ (${original} + ${bet} + ${bet}) × 100 = ${fmt(answer)}%. При таком эквити EV колла равен нулю, выше — положителен. Будущих ставок нет.`;
- }else if(skill==='texture'){
-  const draw=Math.random()<.4;
-  if(draw){const s=pick([...suits]);t.cards=['A'+s,'J'+s];t.board=['8'+s,'3'+s,'2'+pick([...suits].filter(x=>x!==s))];t.prompt='Какое дро есть у вашей руки на флопе?';options('Флеш-дро',['Готовый флеш','Двустороннее стрит-дро','Нет дро']);t.hint='Сколько карт одной масти среди ваших карт и доски?';t.explanation='Четыре карты одной масти — флеш-дро. Ещё одна даст флеш, но не гарантирует победу против любой руки.';}
-  else{t.board=shuffle(deck).slice(0,3);const distinct=new Set(t.board.map(c=>c[1])).size;options(distinct===3?'Радужный':distinct===2?'Двухмастный':'Монотонный',['Радужный','Двухмастный','Монотонный']);t.prompt='Какой это флоп по мастям?';t.hint='Посчитайте разные масти, не достоинства.';t.explanation=`Разных мастей: ${distinct}. Радужный — три, двухмастный — две, монотонный — одна.`;}
- }else{
-  const cards=shuffle(deck).slice(0,8);t.cards=cards.slice(0,2);t.opponent=cards.slice(2,4);t.board=cards.slice(4);const result=equity(t.cards,t.opponent,t.board);t.context='Тёрн · конкретная рука соперника · до вскрытия';t.prompt='Оцените вашу долю банка — эквити. Выберите ближайшее значение.';const answer=Math.round(result.percent/10)*10;options(answer+'%',[answer-20,answer-10,answer+10,answer+20,0,50,100].filter(n=>n>=0&&n<=100).map(n=>n+'%'));t.hint='Учитывайте победы и половину каждого дележа. Рука соперника известна.';t.explanation=`Точное эквити: ${fmt(result.percent)}%. Ближайшая оценка: ${answer}%. Побед: ${result.wins}, ничьих: ${result.ties}, всего риверов: ${result.total}.`;t.details=`Полный перебор всех ${result.total} оставшихся карт без симуляции. (${result.wins} + ${result.ties} ÷ 2) ÷ ${result.total} × 100. Это доля банка, а не рекомендация действия.`;
- }
- return t;
+import {
+  deck,
+  ranks,
+  suits,
+  evaluate,
+  compare,
+  names,
+  potOdds,
+  spr,
+  handLabel,
+  equity,
+  preflopOrder,
+  postflopOrder,
+} from "./poker";
+import { type Skill, skillNames } from "./content";
+export type CardKind = "figures" | "ace" | "equal" | "numbers";
+export type Task = {
+  variant?: CardKind;
+  id: string;
+  skill: Skill;
+  title: string;
+  prompt: string;
+  cards?: string[];
+  board?: string[];
+  opponent?: string[];
+  choices: string[];
+  answer: string;
+  explanation: string;
+  hint: string;
+  details?: string;
+  category: "exact";
+  selection?: boolean;
+  context?: string;
+};
+export const allSkills = Object.keys(skillNames) as Skill[];
+export function shuffle<T>(input: T[]): T[] {
+  const a = [...input];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
 }
-export function check(task:Task,answer:string,selected:string[]=[]):boolean {if(task.selection){if(selected.length!==5||selected.some(c=>!task.cards?.includes(c))||new Set(selected).size!==5)return false;return compare(evaluate(selected).score,evaluate(task.cards!).score)===0;}return task.answer===answer;}
+const pick = <T>(a: T[]) => a[Math.floor(Math.random() * a.length)];
+const fmt = (n: number) => Number(n.toFixed(1)).toLocaleString("ru-RU");
+export function generate(skill: Skill): Task {
+  if (skill === "cards")
+    return cardTask(pick(["figures", "figures", "figures", "ace", "equal"]));
+  const t: Task = {
+    id: crypto.randomUUID(),
+    skill,
+    title: skillNames[skill],
+    prompt: "",
+    choices: [],
+    answer: "",
+    explanation: "",
+    hint: "",
+    category: "exact",
+  };
+  const options = (answer: string, others: string[]) => {
+    t.answer = answer;
+    t.choices = shuffle([
+      answer,
+      ...shuffle([...new Set(others)].filter((x) => x !== answer)).slice(0, 3),
+    ]);
+  };
+  if (skill === "combination" || skill === "best") {
+    t.cards = shuffle(deck).slice(0, 7);
+    const result = evaluate(t.cards);
+    t.prompt =
+      skill === "best"
+        ? "Выберите лучшую пятёрку из семи карт."
+        : "Какая лучшая комбинация в этих семи картах?";
+    t.selection = skill === "best";
+    options(result.name, names);
+    t.hint = "Итоговая рука состоит ровно из пяти карт.";
+    t.explanation = `Лучшая комбинация: ${result.name.toLowerCase()}. Учитываются только пять карт; шестая и седьмая не решают исход.`;
+    t.details = `Один из лучших наборов: ${result.best.join(" ")}. Порядок внутри пятёрки не важен.`;
+  } else if (skill === "winner") {
+    const cards = shuffle(deck).slice(0, 9);
+    t.cards = cards.slice(0, 2);
+    t.opponent = cards.slice(2, 4);
+    t.board = cards.slice(4);
+    const a = evaluate([...t.cards, ...t.board]),
+      b = evaluate([...t.opponent, ...t.board]);
+    const c = compare(a.score, b.score);
+    options(c === 0 ? "Делёж" : c > 0 ? "Вы" : "Соперник", [
+      "Вы",
+      "Соперник",
+      "Делёж",
+    ]);
+    t.prompt = "Вскрытие. Кому достанется банк?";
+    t.hint = "Сравните лучшие пятёрки, затем кикеры.";
+    t.explanation = `У вас: ${a.name.toLowerCase()}. У соперника: ${b.name.toLowerCase()}. ${c === 0 ? "Лучшие пятёрки равны — банк делится." : "При равной категории сравниваются достоинства и кикеры по порядку."}`;
+    t.details = `Ваша пятёрка: ${a.best.join(" ")}. Соперник: ${b.best.join(" ")}.`;
+  } else if (skill === "order") {
+    const pre = Math.random() < 0.5;
+    const order = pre ? preflopOrder : postflopOrder;
+    const index = Math.floor(Math.random() * 5);
+    t.prompt = `6-max, все игроки в раздаче. ${pre ? "Префлоп" : "Флоп"}: кто действует сразу после ${order[index]} в первом круге?`;
+    options(order[index + 1], order);
+    t.hint = pre
+      ? "На префлопе начинают слева от BB."
+      : "После флопа начинают слева от BTN.";
+    t.explanation = `Очередь: ${order.join(" → ")}. Выбывших игроков пропускают.`;
+  } else if (skill === "stack" || skill === "spr") {
+    const a = pick([20, 30, 40, 60, 80, 100]),
+      b = pick([25, 40, 50, 75, 100, 120]),
+      pot = pick([5, 10, 20]);
+    t.context = `Один на один · в банке ${pot} BB`;
+    t.prompt = `У вас осталось ${a} BB, у соперника ${b} BB. ${skill === "stack" ? "Какой эффективный оставшийся стек?" : "Чему равен SPR?"}`;
+    const result = skill === "stack" ? Math.min(a, b) : spr(a, b, pot);
+    const unit = skill === "stack" ? " BB" : "";
+    options(
+      fmt(result) + unit,
+      [a + b, a, b, result + 1, result * 2, result / 2].map(
+        (x) => fmt(x) + unit,
+      ),
+    );
+    t.hint =
+      skill === "stack"
+        ? "Возьмите меньший стек."
+        : "SPR = меньший оставшийся стек ÷ банк.";
+    t.explanation =
+      skill === "stack"
+        ? `min(${a}, ${b}) = ${result} BB. Больше у короткого стека выиграть нельзя.`
+        : `min(${a}, ${b}) ÷ ${pot} = ${fmt(result)}. Здесь используем оставшиеся стеки, а не стартовые.`;
+  } else if (skill === "notation") {
+    t.cards = shuffle(deck).slice(0, 2);
+    const label = handLabel(t.cards),
+      base = label.slice(0, 2);
+    t.prompt = "Как записать эту стартовую руку?";
+    options(label, [
+      base + "s",
+      base + "o",
+      base,
+      base[0] + base[0],
+      base[1] + base[1],
+    ]);
+    t.hint = "s — одна масть, o — разные. У пары суффикса нет.";
+    t.explanation = `${label}: ${label.length === 2 ? "карманная пара" : label.endsWith("s") ? "одномастная рука (suited)" : "разномастная рука (offsuit)"}. Старшее достоинство пишется первым.`;
+  } else if (skill === "odds") {
+    const original = pick([10, 20, 30, 40, 60]),
+      bet = pick([5, 10, 15, 20, 30]),
+      pot = original + bet,
+      answer = potOdds(pot, bet);
+    t.context = "Один на один · олл-ин · без комиссии";
+    t.prompt = `В банке было ${original} BB. Соперник поставил олл-ин ${bet} BB. Вам нужно добавить ${bet} BB для колла. Какой порог эквити?`;
+    options(
+      fmt(answer) + "%",
+      [10, 20, 25, 33.3, 40, 50, (bet / pot) * 100].map((x) => fmt(x) + "%"),
+    );
+    t.hint = "В знаменателе — банк после вашего колла.";
+    t.explanation = `${bet} ÷ (${original} + ${bet} + ${bet}) × 100 = ${fmt(answer)}%. При таком эквити EV колла равен нулю, выше — положителен. Будущих ставок нет.`;
+  } else if (skill === "texture") {
+    const draw = Math.random() < 0.4;
+    if (draw) {
+      const s = pick([...suits]);
+      t.cards = ["A" + s, "J" + s];
+      t.board = [
+        "8" + s,
+        "3" + s,
+        "2" + pick([...suits].filter((x) => x !== s)),
+      ];
+      t.prompt = "Какое дро есть у вашей руки на флопе?";
+      options("Флеш-дро", [
+        "Готовый флеш",
+        "Двустороннее стрит-дро",
+        "Нет дро",
+      ]);
+      t.hint = "Сколько карт одной масти среди ваших карт и доски?";
+      t.explanation =
+        "Четыре карты одной масти — флеш-дро. Ещё одна даст флеш, но не гарантирует победу против любой руки.";
+    } else {
+      t.board = shuffle(deck).slice(0, 3);
+      const distinct = new Set(t.board.map((c) => c[1])).size;
+      options(
+        distinct === 3
+          ? "Радужный"
+          : distinct === 2
+            ? "Двухмастный"
+            : "Монотонный",
+        ["Радужный", "Двухмастный", "Монотонный"],
+      );
+      t.prompt = "Какой это флоп по мастям?";
+      t.hint = "Посчитайте разные масти, не достоинства.";
+      t.explanation = `Разных мастей: ${distinct}. Радужный — три, двухмастный — две, монотонный — одна.`;
+    }
+  } else {
+    const cards = shuffle(deck).slice(0, 8);
+    t.cards = cards.slice(0, 2);
+    t.opponent = cards.slice(2, 4);
+    t.board = cards.slice(4);
+    const result = equity(t.cards, t.opponent, t.board);
+    t.context = "Тёрн · конкретная рука соперника · до вскрытия";
+    t.prompt = "Оцените вашу долю банка — эквити. Выберите ближайшее значение.";
+    const answer = Math.round(result.percent / 10) * 10;
+    options(
+      answer + "%",
+      [answer - 20, answer - 10, answer + 10, answer + 20, 0, 50, 100]
+        .filter((n) => n >= 0 && n <= 100)
+        .map((n) => n + "%"),
+    );
+    t.hint =
+      "Учитывайте победы и половину каждого дележа. Рука соперника известна.";
+    t.explanation = `Точное эквити: ${fmt(result.percent)}%. Ближайшая оценка: ${answer}%. Побед: ${result.wins}, ничьих: ${result.ties}, всего риверов: ${result.total}.`;
+    t.details = `Полный перебор всех ${result.total} оставшихся карт без симуляции. (${result.wins} + ${result.ties} ÷ 2) ÷ ${result.total} × 100. Это доля банка, а не рекомендация действия.`;
+  }
+  return t;
+}
+export function check(
+  task: Task,
+  answer: string,
+  selected: string[] = [],
+): boolean {
+  if (task.selection) {
+    if (
+      selected.length !== 5 ||
+      selected.some((c) => !task.cards?.includes(c)) ||
+      new Set(selected).size !== 5
+    )
+      return false;
+    return compare(evaluate(selected).score, evaluate(task.cards!).score) === 0;
+  }
+  return task.answer === answer;
+}
+
+const rankNames: Record<string, string> = {
+  J: "валет",
+  Q: "дама",
+  K: "король",
+  A: "туз",
+  T: "десятка",
+};
+export function cardTask(kind: CardKind, pair?: string[]): Task {
+  const rs =
+    pair ??
+    (kind === "figures"
+      ? pick([
+          ["J", "Q"],
+          ["J", "K"],
+          ["Q", "K"],
+        ])
+      : kind === "ace"
+        ? ["A", pick(["J", "Q", "K", "9"])]
+        : kind === "equal"
+          ? Array(2).fill(pick(["J", "Q", "K", "A"]))
+          : shuffle([..."23456789T"]).slice(0, 2));
+  const ss = shuffle([...suits]),
+    cards = shuffle(rs.map((r, i) => r + ss[i]));
+  const diff = ranks.indexOf(cards[0][0]) - ranks.indexOf(cards[1][0]);
+  const higher = diff > 0 ? cards[0][0] : cards[1][0],
+    lower = diff > 0 ? cards[1][0] : cards[0][0];
+  return {
+    id: crypto.randomUUID(),
+    skill: "cards",
+    variant: kind,
+    title: skillNames.cards,
+    prompt: "Какая карта старше по достоинству?",
+    cards,
+    choices: ["Левая", "Равны", "Правая"],
+    answer: diff === 0 ? "Равны" : diff > 0 ? "Левая" : "Правая",
+    category: "exact",
+    hint: "Валет J → дама Q → король K → туз A. Масти равны.",
+    explanation:
+      diff === 0
+        ? "Достоинства одинаковые. Масти не дают преимущества: карты равны."
+        : (rankNames[higher] ?? higher) +
+          " старше, чем " +
+          (rankNames[lower] ?? lower) +
+          ". Порядок: 2–3–4–5–6–7–8–9–10–J–Q–K–A.",
+  };
+}
+export function generateSession(skills: Skill[], count: number): Task[] {
+  if (!skills.length || !Number.isInteger(count) || count < 1 || count > 20)
+    throw Error("Invalid session");
+  if (skills.length === 1 && skills[0] === "cards" && count === 5)
+    return shuffle([
+      ...shuffle([
+        ["J", "Q"],
+        ["J", "K"],
+        ["Q", "K"],
+      ]).map((pair) => cardTask("figures", pair)),
+      cardTask("ace"),
+      cardTask(pick(["equal", "numbers"])),
+    ]);
+  return Array.from({ length: count }, (_, i) =>
+    generate(skills[i % skills.length]),
+  );
+}
+export function generateSimilar(task: Task): Task {
+  if (task.skill !== "cards") return generate(task.skill);
+  const next = cardTask(
+    task.variant ?? "figures",
+    task.cards?.map((c) => c[0]),
+  );
+  if (next.cards!.join() === task.cards?.join()) {
+    const used = new Set(next.cards!.map((c) => c[1]));
+    const alternative = [...suits].find((s) => !used.has(s))!;
+    next.cards![0] = next.cards![0][0] + alternative;
+  }
+  return next;
+}

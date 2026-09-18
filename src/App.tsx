@@ -1,122 +1,1033 @@
-import {useEffect,useRef,useState} from 'react';
-import {ArrowRight,ArrowLeft,BookOpen,ChartNoAxesColumnIncreasing,Check,CheckCircle2,ChevronRight,Download,Grid2X2,Lightbulb,RotateCcw,Settings2,ShieldCheck,Spade,Sparkles,Target,WifiOff,X} from 'lucide-react';
-import {useRegisterSW} from 'virtual:pwa-register/react';
-import {lessons,skillNames,type Lesson,type Skill} from './content';
-import {allSkills,check,shuffle,type Task} from './tasks';
-import {loadProgress,mastery,record,storageKey,validProgress,type Progress} from './progress';
-import {sourceReview} from './strategy';
-import {glossary} from './glossary';
+import { useEffect, useRef, useState } from "react";
+import {
+  ArrowRight,
+  ArrowLeft,
+  BookOpen,
+  ChartNoAxesColumnIncreasing,
+  Check,
+  CheckCircle2,
+  ChevronRight,
+  Download,
+  Grid2X2,
+  Lightbulb,
+  RotateCcw,
+  Settings2,
+  ShieldCheck,
+  Sparkles,
+  Target,
+  WifiOff,
+  X,
+} from "lucide-react";
+import { useRegisterSW } from "virtual:pwa-register/react";
+import { lessons, skillNames, type Lesson, type Skill } from "./content";
+import { allSkills, check, shuffle, type Task } from "./tasks";
+import {
+  loadProgress,
+  mastery,
+  record,
+  storageKey,
+  validProgress,
+  type Progress,
+} from "./progress";
+import { sourceReview } from "./strategy";
+import { glossary } from "./glossary";
+import { Home } from "./components/Home";
+import { Card, Cards } from "./components/PlayingCard";
+import { LessonReader } from "./components/LessonReader";
+import { Sava } from "./components/Sava";
+import { Logo } from "./components/Logo";
 
-const symbols:Record<string,string>={s:'♠',h:'♥',d:'♦',c:'♣'};
-const suitNames:Record<string,string>={s:'пики',h:'червы',d:'бубны',c:'трефы'};
-function Card({card,active=false,onClick}:{card:string;active?:boolean;onClick?:()=>void}){const content=<><span>{card[0]==='T'?'10':card[0]}</span><b>{symbols[card[1]]}</b></>;const cls=`card ${'hd'.includes(card[1])?'red':''} ${active?'selected':''}`;return onClick?<button aria-label={`${card[0]} ${suitNames[card[1]]}`} aria-pressed={active} className={cls} onClick={onClick}>{content}</button>:<span aria-label={`${card[0]} ${suitNames[card[1]]}`} className={cls}>{content}</span>;}
-function Cards({cards}:{cards:string[]}){return <div className="cards">{cards.map(c=><Card key={c} card={c}/>)}</div>;}
-function Bar({value}:{value:number}){return <div className="bar"><span style={{width:`${Math.min(100,value)}%`}}/></div>;}
-type Session={tasks:Task[];index:number;results:boolean[];review:boolean};
+function Bar({ value }: { value: number }) {
+  return (
+    <div className="bar">
+      <span style={{ width: `${Math.min(100, value)}%` }} />
+    </div>
+  );
+}
+type Session = {
+  tasks: Task[];
+  index: number;
+  results: boolean[];
+  review: boolean;
+};
 
-export default function App(){
- const [initial]=useState(loadProgress);
- const [progress,setProgress]=useState<Progress>(initial.progress);
- const [storageError,setStorageError]=useState(initial.error);
- const [storageBlocked,setStorageBlocked]=useState(!!initial.error);
- const [tab,setTab]=useState<'learn'|'train'|'progress'>('learn');
- const [screen,setScreen]=useState<'main'|'lesson'|'session'|'summary'|'settings'|'matrix'>('main');
- const [lesson,setLesson]=useState<Lesson>(lessons[0]);const [step,setStep]=useState(0);const [lessonAnswer,setLessonAnswer]=useState('');
- const [session,setSession]=useState<Session|null>(null);const [answer,setAnswer]=useState('');const [selected,setSelected]=useState<string[]>([]);const [graded,setGraded]=useState<boolean|null>(null);const [hint,setHint]=useState(false);
- const [loading,setLoading]=useState(false);const [error,setError]=useState('');const [online,setOnline]=useState(navigator.onLine);const worker=useRef<Worker|null>(null);const [quit,setQuit]=useState(false);
- const {offlineReady:[offlineReady],needRefresh:[needRefresh],updateServiceWorker}=useRegisterSW({onRegisterError(){setError('Не удалось подготовить офлайн-режим. Откройте приложение по HTTPS и повторите загрузку.');}});
- const [cached,setCached]=useState(false);
- useEffect(()=>{if('serviceWorker'in navigator)navigator.serviceWorker.getRegistration().then(r=>setCached(!!r?.active)).catch(()=>setCached(false));},[]);
- useEffect(()=>{if(storageBlocked)return;try{localStorage.setItem(storageKey,JSON.stringify(progress));setStorageError('');}catch{setStorageError('Не удалось сохранить прогресс на устройстве. Экспортируйте копию в настройках.');}},[progress,storageBlocked]);
- useEffect(()=>{const on=()=>setOnline(navigator.onLine);window.addEventListener('online',on);window.addEventListener('offline',on);return()=>{window.removeEventListener('online',on);window.removeEventListener('offline',on);worker.current?.terminate();};},[]);
- useEffect(()=>{window.scrollTo({top:0,behavior:'instant'});},[screen,tab,step,session?.index]);
- const solved=progress.attempts.length;const today=new Date().toLocaleDateString('sv-SE');const daily=progress.attempts.filter(a=>new Date(a.at).toLocaleDateString('sv-SE')===today).length;
- const recommendation=lessons.find(l=>l.ready&&!progress.lessons.includes(l.id))??lessons[0];
- const task=session?.tasks[session.index];
- function openLesson(l:Lesson){setLesson(l);setStep(0);setLessonAnswer('');setScreen('lesson');}
- function resetAnswer(){setAnswer('');setSelected([]);setGraded(null);setHint(false);}
- function start(skills:Skill[]=allSkills,review=false){
-  setError('');resetAnswer();
-  if(review){const tasks=progress.mistakes.slice(0,5);if(!tasks.length)return;setSession({tasks,index:0,results:[],review:true});setScreen('session');return;}
-  setLoading(true);worker.current?.terminate();const w=new Worker(new URL('./training.worker.ts',import.meta.url),{type:'module'});worker.current=w;
-  w.onmessage=(event:MessageEvent<{tasks?:Task[];error?:string}>)=>{setLoading(false);w.terminate();if(event.data.error||!event.data.tasks){setError('Не удалось создать задачи. Попробуйте ещё раз.');return;}setSession({tasks:event.data.tasks,index:0,results:[],review:false});setScreen('session');};
-  w.onerror=()=>{setLoading(false);setError('Не удалось загрузить тренажёр. Перезагрузите приложение.');w.terminate();};
-  w.postMessage({skills:shuffle(skills),count:5});
- }
- function submit(){if(!task||!session||graded!==null)return;const correct=check(task,answer,selected);setGraded(correct);setProgress(p=>record(p,task,correct,hint));setSession({...session,results:[...session.results,correct]});}
- function next(){if(!session)return;if(session.index===session.tasks.length-1)setScreen('summary');else{setSession({...session,index:session.index+1});resetAnswer();}}
- function finishLesson(){setProgress(p=>({...p,lessons:[...new Set([...p.lessons,lesson.id])]}));if(lesson.skills.length)start(lesson.skills);else setScreen('main');}
- const back=()=>{if(screen==='session'&&graded===null)setQuit(true);else setScreen('main');};
- function exportProgress(){const url=URL.createObjectURL(new Blob([JSON.stringify(progress,null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download=`river-progress-${today}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
- async function importProgress(file:File|undefined){if(!file)return;try{if(file.size>5_000_000)throw Error();const parsed=JSON.parse(await file.text());if(!validProgress(parsed))throw Error();setProgress(parsed);setStorageBlocked(false);setError('Резервная копия восстановлена.');}catch{setError('Файл не похож на резервную копию PokChe. Текущий прогресс сохранён.');}}
- return <div className="app">
- <header className="topbar"><button className="brand" onClick={()=>{if(screen==='session')setQuit(true);else setScreen('main');}} aria-label="PokChe — на главную"><span className="brand-icon"><Spade size={20} fill="currentColor"/></span>PokChe<span className="beta">БЕТА</span></button><button className="icon-button" aria-label="Настройки и установка" onClick={()=>{if(screen==='session')setQuit(true);else setScreen('settings');}}><Settings2 size={21}/></button></header>
- {!online&&<div className="status-note"><WifiOff size={15}/> Без интернета · прогресс на устройстве</div>}
- {storageError&&<div className="notice" role="alert">{storageError}</div>}
- {error&&<div className="notice" role="status">{error}<button onClick={()=>setError('')} aria-label="Закрыть уведомление"><X size={16}/></button></div>}
- {needRefresh&&screen==='main'&&<div className="notice">Есть обновление <button onClick={()=>updateServiceWorker(true)}>Обновить</button></div>}
- <main>
- {screen==='main'&&tab==='learn'&&<>
-  <div className="eyebrow intro-label">ПОКЕР ПО ШАГАМ <span><span className="dot"/> В своём темпе</span></div>
-  <h1>Маленькая практика.<br/><span className="serif">Уверенная игра.</span></h1>
-  <p className="lead">Понимай решения, а не запоминай ответы.</p>
-  <section className="hero"><div className="hero-text"><span className="eyebrow"><Sparkles size={13}/> ВАШ СЛЕДУЮЩИЙ ШАГ</span><h2>{recommendation.title}</h2><p>{recommendation.subtitle}</p><span className="time">5–10 минут · урок + практика</span></div><div className="hero-art" aria-hidden="true"><div className="orbit"/><span className="art-card one">A<Spade fill="currentColor"/></span><span className="art-card two">K<span>♥</span></span><span className="little-star">✧</span></div><button className="primary lime" onClick={()=>openLesson(recommendation)}>Начать урок <ArrowRight size={19}/></button></section>
-  <section className="daily"><div className="daily-icon"><Target size={22}/></div><div><strong>Пять задач на сегодня</strong><p>{daily>=5?'Отлично! Дневная цель достигнута.':`${Math.min(daily,5)} из 5 · одна маленькая привычка`}</p><div className="daily-dots">{Array.from({length:5},(_,i)=><i className={i<daily?'filled':''} key={i}/>)}</div></div><button aria-label="Начать пять задач" onClick={()=>start()} disabled={loading}><ArrowRight size={22}/></button></section>
-  <div className="section-heading"><h2>Ваш маршрут</h2><span>{progress.lessons.length} / {lessons.filter(l=>l.ready).length} уроков</span></div>
-  <div className="segment"><span>ОСНОВЫ И ПРАКТИКА</span><span>01 — 03</span></div>
-  <div className="curriculum">{lessons.map(l=><div className={`lesson-row ${!l.ready?'upcoming':''}`} key={l.id}><span className={`lesson-num ${progress.lessons.includes(l.id)?'done':''}`}>{progress.lessons.includes(l.id)?<Check size={19}/>:l.num}</span><div className="lesson-info"><h3>{l.title}</h3><p>{l.subtitle}</p>{l.ready?<div className="row-actions"><button onClick={()=>openLesson(l)}>{progress.lessons.includes(l.id)?'Повторить урок':'Разобраться'} <ChevronRight size={13}/></button>{l.skills.length>0&&<button disabled={loading} onClick={()=>start(l.skills)}>Тренироваться</button>}</div>:<span className="future-label">{l.id==='preflop'?'Ожидает проверенных диапазонов':'Дальнейшая программа'}</span>}</div></div>)}</div>
-  <div className="small-note"><ShieldCheck size={17}/><span>Без регистрации. Ваш прогресс — только на этом устройстве.</span></div>
- </>}
- {screen==='main'&&tab==='train'&&<>
-  <div className="eyebrow">ЕЖЕДНЕВНАЯ ПРАКТИКА</div><h1>Один навык.<br/><span className="serif">Чуть лучше каждый день.</span></h1><p className="lead">Можно начать сразу, без прохождения уроков.</p>
-  <button className="feature-action" onClick={()=>start()} disabled={loading}><span className="feature-icon"><Sparkles/></span><span><strong>Смешанная тренировка</strong><small>5 задач · разные навыки</small></span><ArrowRight/></button>
-  <button className="review-action" disabled={!progress.mistakes.length||loading} onClick={()=>start([],true)}><RotateCcw size={21}/><span><strong>Повторить ошибки</strong><small>{progress.mistakes.length?`${progress.mistakes.length} задач ждут разбора`:'Пока нет ошибок для повторения'}</small></span><ChevronRight size={19}/></button>
-  <div className="section-heading"><h2>Выберите навык</h2><span>11 тренажёров</span></div>
-  <div className="skill-list">{allSkills.map((s,i)=><button key={s} disabled={loading} onClick={()=>start([s])}><span className="skill-index">{String(i+1).padStart(2,'0')}</span><span><strong>{skillNames[s]}</strong><small>{s==='equity'?'Конкретная рука · полный перебор':s==='spr'?'Оставшийся стек ÷ банк':'Точный ответ · 5 новых задач'}</small></span><ChevronRight size={18}/></button>)}</div>
-  <button className="review-action" onClick={()=>setScreen('matrix')}><Grid2X2 size={21}/><span><strong>Матрица стартовых рук</strong><small>Исследуйте 169 типов рук</small></span><ChevronRight size={18}/></button>
-  <details className="info-box"><summary>Почему нет стратегических оценок?</summary><p>{sourceReview.reason}</p><p>«Собери диапазон», префлоп-действия и солверные задачи появятся после подключения проверенного набора. Турнирная ветка пока в программе развития.</p><a href={sourceReview.url} target="_blank" rel="noreferrer">Посмотреть источник ↗</a></details>
- </>}
- {screen==='main'&&tab==='progress'&&<>
-  <div className="eyebrow">ВАША ДИСТАНЦИЯ</div><h1>Прогресс<br/><span className="serif">из маленьких шагов.</span></h1><p className="lead">Каждый разбор — вклад в следующую раздачу.</p>
-  <div className="stats"><div><strong>{solved}</strong><span>решено задач</span></div><div><strong>{solved?Math.round(progress.attempts.filter(a=>a.correct).length/solved*100):0}<small>%</small></strong><span>верных ответов</span></div><div><strong>{progress.days.length}</strong><span>дней практики</span></div></div>
-  <section className="progress-card"><div className="section-heading"><h2>Уроки изучены</h2><strong>{progress.lessons.length}/{lessons.filter(l=>l.ready).length}</strong></div><Bar value={progress.lessons.length/lessons.filter(l=>l.ready).length*100}/><p>Урок завершён и навык освоен — разные достижения.</p></section>
-  <div className="section-heading"><h2>Ваши навыки</h2><span>Последние 10 ответов</span></div>
-  <div className="mastery-list">{allSkills.map(s=>{const m=mastery(progress,s);return <button key={s} onClick={()=>start([s])} disabled={loading}><div><strong>{skillNames[s]}</strong><span>{m.mastered?<CheckCircle2 size={17}/>:m.total?`${m.accuracy}%`:'—'}</span></div><Bar value={m.total?m.accuracy:0}/><small>{m.mastered?'Освоен':m.total?`${m.total}/10 ответов без подсказки`:'Ещё не тренировались'}</small></button>;})}</div><p className="muted">Освоен: минимум 8 верных из последних 10 ответов без подсказки. Это учебный ориентир.</p>
-  <button className="primary" disabled={!progress.mistakes.length||loading} onClick={()=>start([],true)}>Повторить ошибки · {progress.mistakes.length}<RotateCcw size={18}/></button>
- </>}
- {screen==='lesson'&&<>
-  <button className="back" onClick={back}><ArrowLeft size={18}/> К маршруту</button><div className="section-heading"><span className="eyebrow">УРОК {lesson.num}</span><span>{step+1} / {lesson.slides.length}</span></div><Bar value={(step+1)/lesson.slides.length*100}/>
-  <h1 className="lesson-title">{lesson.slides[step].title}</h1><p className="lesson-text">{lesson.slides[step].text}</p>
-  <div className="example">{lesson.slides[step].cards&&<Cards cards={lesson.slides[step].cards!}/>}<span className="eyebrow">НА ПРИМЕРЕ</span><p>{lesson.slides[step].example}</p></div>
-  <h3 className="question-label">Проверим понимание</h3><p>{lesson.slides[step].question}</p><div className="choices">{lesson.slides[step].choices.map(c=><button className={lessonAnswer===c?(c===lesson.slides[step].answer?'correct':'wrong'):''} key={c} disabled={!!lessonAnswer} onClick={()=>setLessonAnswer(c)}>{c}{lessonAnswer===c&&(c===lesson.slides[step].answer?<Check size={18}/>:<X size={18}/>)}</button>)}</div>
-  {lessonAnswer&&<div className="feedback" role="status"><strong>{lessonAnswer===lesson.slides[step].answer?'Верно!':'Разберёмся'}</strong><p>{lesson.slides[step].reason}</p></div>}
-  {lesson.id==='formats'&&step===lesson.slides.length-1&&<div className="format-picker"><p>Ваше направление</p><div className="toggle"><button className={progress.format==='cash'?'active':''} onClick={()=>setProgress(p=>({...p,format:'cash'}))}>Кэш</button><button className={progress.format==='tournament'?'active':''} onClick={()=>setProgress(p=>({...p,format:'tournament'}))}>Турниры</button></div><p className="muted">{progress.format==='cash'?'Ориентир: 6-max, 100 BB. Сейчас доступны общие навыки.':'Сейчас доступны общие навыки. Турнирные задачи появятся отдельно; рекомендация — математика перед пуш/фолдом и ICM.'}</p></div>}
-  <button className="primary" disabled={!lessonAnswer||loading} onClick={()=>{if(step<lesson.slides.length-1){setStep(step+1);setLessonAnswer('');}else finishLesson();}}>{step<lesson.slides.length-1?'Продолжить':lesson.skills.length?'Перейти к практике':'Завершить урок'}<ArrowRight size={19}/></button>
- </>}
- {screen==='session'&&task&&session&&<>
-  <div className="session-heading"><button className="icon-button" aria-label="Выйти из тренировки" onClick={back}><X size={21}/></button><span>{session.review?'Повторение ошибок':'Короткая практика'}</span><strong>{session.index+1}<span> / {session.tasks.length}</span></strong></div><Bar value={(session.index+(graded!==null?1:0))/session.tasks.length*100}/>
-  <div className="task-type"><ShieldCheck size={14}/> {task.skill==='equity'?'Точный расчёт · оценка округлена':'Точный ответ'}</div><h1 className="task-title">{task.title}</h1>
-  {task.context&&<p className="context">{task.context}</p>}
-  {(task.cards||task.board)&&<section className="table"><div className="table-label">{task.opponent?'ВСКРЫТИЕ / ИЗВЕСТНЫЕ РУКИ':'УЧЕБНАЯ СИТУАЦИЯ'}</div>{task.opponent&&<div className="hand"><span>Соперник</span><Cards cards={task.opponent}/></div>}{task.board&&<div className="board"><span>Общие карты</span><Cards cards={task.board}/></div>}{task.cards&&<div className="hand"><span>{task.opponent||task.board?'Ваша рука':task.selection?'Нажмите на пять карт':'Карты'}</span><div className={`cards ${task.selection?'select-cards':''}`}>{task.cards.map(c=><Card card={c} key={c} active={selected.includes(c)} onClick={task.selection&&graded===null?()=>setSelected(p=>p.includes(c)?p.filter(x=>x!==c):p.length<5?[...p,c]:p):undefined}/>)}</div></div>}</section>}
-  <h2 className="prompt">{task.prompt}</h2>
-  <details className="task-glossary" key={task.id}><summary>Объяснить термины</summary><p>{glossary[task.skill]}</p></details>
-  {task.selection?<p className="muted">Выбрано {selected.length} из 5. Любая равноценная лучшая пятёрка принимается.</p>:<div className="choices">{task.choices.map(c=><button key={c} disabled={graded!==null} aria-pressed={answer===c} onClick={()=>setAnswer(c)} className={`${answer===c?'chosen':''} ${graded!==null&&c===task.answer?'correct':''} ${graded===false&&answer===c?'wrong':''}`}>{c}{graded!==null&&c===task.answer?<Check size={20}/>:<span className="radio"/>}</button>)}</div>}
-  {graded===null?<><button className="hint" onClick={()=>setHint(true)}><Lightbulb size={17}/> Нужна подсказка</button>{hint&&<p className="hint-text">{task.hint}</p>}<button className="primary" disabled={task.selection?selected.length!==5:!answer} onClick={submit}>Проверить ответ <ArrowRight size={18}/></button></>:<><div className={`feedback ${graded?'success':'retry'}`} role="status"><strong>{graded?<CheckCircle2 size={20}/>:<Lightbulb size={20}/>} {graded?'Верно. Так держать!':'Ошибка — повод разобраться'}</strong><p>{task.explanation}</p>{task.details&&<details><summary>Подробнее о проверке</summary><p>{task.details}</p></details>}{!graded&&<><small>Задача сохранена в повторениях.</small><button className="text-button" disabled={loading} onClick={()=>start([task.skill])}>Начать 5 похожих задач</button></>}</div><button className="primary" onClick={next}>{session.index===session.tasks.length-1?'Завершить тренировку':'Следующая задача'}<ArrowRight size={18}/></button></>}
- </>}
- {screen==='summary'&&session&&<section className="summary"><div className="summary-icon"><CheckCircle2 size={38}/></div><div className="eyebrow">ЕЩЁ ОДИН ШАГ ВПЕРЁД</div><h1>Практика<br/><span className="serif">завершена.</span></h1><div className="big-result">{session.results.filter(Boolean).length}<span> / {session.tasks.length}</span></div><p>верных ответов</p><div className="result-dots">{session.results.map((r,i)=><span className={r?'ok':'miss'} key={i}>{r?<Check size={18}/>:<RotateCcw size={16}/>}</span>)}</div><p className="lead">{session.results.every(Boolean)?'Отличная работа. Закрепите навык новой подборкой.':'Ошибки сохранены. Короткое повторение поможет закрепить разбор.'}</p><button className="primary" onClick={()=>start([...new Set(session.tasks.map(t=>t.skill))])} disabled={loading}>Ещё пять новых задач<ArrowRight size={18}/></button>{progress.mistakes.length>0&&<button className="secondary" onClick={()=>start([],true)}>Повторить ошибки · {progress.mistakes.length}</button>}<button className="text-button" onClick={()=>{setTab('progress');setScreen('main');}}>Посмотреть прогресс</button><div className="small-note"><ShieldCheck size={16}/>{storageError?'Проверьте сохранение в настройках':'Прогресс сохранён на устройстве'}</div></section>}
- {screen==='matrix'&&<><button className="back" onClick={back}><ArrowLeft size={18}/> К тренажёрам</button><div className="eyebrow">ИССЛЕДУЕМ РУКИ</div><h1>169 клеток.<br/><span className="serif">1326 комбинаций.</span></h1><p className="lead">Выберите клетку или найдите руку в списке. Это свободная матрица, без оценки стратегии.</p><RangeMatrix/><div className="info-box"><strong>«Собери диапазон» — следующий этап</strong><p>Проверенного набора пока нет. Выбранные клетки не являются рекомендацией к розыгрышу.</p></div></>}
- {screen==='settings'&&<>
-  <button className="back" onClick={back}><ArrowLeft size={18}/> Назад</button><h1>Всё под рукой.</h1><p className="lead">PokChe · версия 0.1 · личная практика</p>
-  <section className="info-box"><h2><Download size={20}/> На главный экран</h2><p><strong>iPhone:</strong> откройте HTTPS-ссылку в Safari → «Поделиться» → «На экран Домой». Если есть переключатель «Открывать как веб-приложение», включите его.</p><p><strong>Android:</strong> откройте HTTPS-ссылку в Chrome → меню ⋮ → «Добавить на главный экран» → «Установить» (название зависит от версии).</p><p><strong>{offlineReady||cached?'Базовые материалы готовы офлайн.':'Офлайн-копия ещё не подтверждена.'}</strong> Первый запуск нужен с интернетом. Откройте установленное приложение и дождитесь готовности офлайн.</p><p className="muted">На телефоне адрес http://IP-компьютера не даёт полноценную PWA. Нужен HTTPS. На компьютере localhost подходит для проверки.</p></section>
-  <section className="info-box"><h2>Прогресс на устройстве</h2><p>Без аккаунта и синхронизации. Очистка данных браузера удалит прогресс. Safari и установленное приложение могут хранить его отдельно — используйте резервную копию.</p><button className="secondary" onClick={exportProgress}>Скачать резервную копию</button><label className="file-label">Восстановить из файла<input type="file" accept="application/json,.json" onChange={e=>{void importProgress(e.target.files?.[0]);e.target.value='';}}/></label><p className="muted">Восстановление заменит текущий прогресс данными файла.</p></section>
-  <section className="info-box"><h2>Направление</h2><div className="toggle"><button className={progress.format==='cash'?'active':''} onClick={()=>setProgress(p=>({...p,format:'cash'}))}>Кэш</button><button className={progress.format==='tournament'?'active':''} onClick={()=>setProgress(p=>({...p,format:'tournament'}))}>Турниры</button></div><p>{progress.format==='cash'?'Планируемый профиль: 6-max, 100 BB. Стратегические задачи ждут проверенных условий.':'Рекомендуем: основы → префлоп и математика → короткие стеки → EV и выплаты → ICM. Турнирные задачи ещё не подключены.'}</p></section>
-  <details className="info-box"><summary>Источники и точность</summary><p>Правила и формулы проверяются детерминированно. Эквити на тёрне — полный перебор 44 риверов против указанной руки; ничья даёт половину банка. Симуляция не используется.</p><p>{sourceReview.name} · проверка {sourceReview.checked}. {sourceReview.reason}</p><a href={sourceReview.url} target="_blank" rel="noreferrer">Исходный PDF ↗</a><p>Постфлоп-солвер b-inary исследован: AGPL-3.0, разработка приостановлена. Код не встроен, рассчитанной базы в приложении нет.</p><a href="https://github.com/b-inary/postflop-solver" target="_blank" rel="noreferrer">Репозиторий солвера ↗</a></details>
- </>}
- </main>
- {loading&&<div className="loading" role="status"><span className="spinner"/> Готовим новые задачи…</div>}
- {quit&&<div className="modal-backdrop"><section className="modal" role="dialog" aria-modal="true" aria-labelledby="quit-title"><h2 id="quit-title">Закончить сейчас?</h2><p>Проверенные ответы уже сохранены. Незавершённая задача не учитывается.</p><button autoFocus className="primary" onClick={()=>setQuit(false)}>Продолжить тренировку</button><button className="secondary" onClick={()=>{setQuit(false);setScreen('main');}}>Выйти</button></section></div>}
- {screen==='main'&&<nav className="bottom-nav" aria-label="Основная навигация">{([{id:'learn',label:'Обучение',Icon:BookOpen},{id:'train',label:'Тренажёры',Icon:Target},{id:'progress',label:'Мой прогресс',Icon:ChartNoAxesColumnIncreasing}] as const).map(({id,label,Icon})=><button aria-current={tab===id?'page':undefined} className={tab===id?'active':''} key={id} onClick={()=>setTab(id)}><Icon size={22}/><span>{label}</span></button>)}</nav>}
- </div>;
+export default function App() {
+  const [initial] = useState(loadProgress);
+  const [progress, setProgress] = useState<Progress>(initial.progress);
+  const [storageError, setStorageError] = useState(initial.error);
+  const [storageBlocked, setStorageBlocked] = useState(!!initial.error);
+  const [tab, setTab] = useState<"learn" | "train" | "progress">("learn");
+  const [screen, setScreen] = useState<
+    "main" | "lesson" | "session" | "summary" | "settings" | "matrix"
+  >("main");
+  const [lesson, setLesson] = useState<Lesson>(lessons[0]);
+  const [step, setStep] = useState(0);
+  const homeScroll = useRef(0);
+  const [session, setSession] = useState<Session | null>(null);
+  const [answer, setAnswer] = useState("");
+  const [selected, setSelected] = useState<string[]>([]);
+  const [graded, setGraded] = useState<boolean | null>(null);
+  const [hint, setHint] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [online, setOnline] = useState(navigator.onLine);
+  const worker = useRef<Worker | null>(null);
+  const [quit, setQuit] = useState(false);
+  const {
+    offlineReady: [offlineReady],
+    needRefresh: [needRefresh],
+    updateServiceWorker,
+  } = useRegisterSW({
+    onRegisterError() {
+      setError(
+        "Не удалось подготовить офлайн-режим. Откройте приложение по HTTPS и повторите загрузку.",
+      );
+    },
+  });
+  const [cached, setCached] = useState(false);
+  useEffect(() => {
+    if ("serviceWorker" in navigator)
+      navigator.serviceWorker
+        .getRegistration()
+        .then((r) => setCached(!!r?.active))
+        .catch(() => setCached(false));
+  }, []);
+  useEffect(() => {
+    if (storageBlocked) return;
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(progress));
+      setStorageError("");
+    } catch {
+      setStorageError(
+        "Не удалось сохранить прогресс на устройстве. Экспортируйте копию в настройках.",
+      );
+    }
+  }, [progress, storageBlocked]);
+  useEffect(() => {
+    const on = () => setOnline(navigator.onLine);
+    window.addEventListener("online", on);
+    window.addEventListener("offline", on);
+    return () => {
+      window.removeEventListener("online", on);
+      window.removeEventListener("offline", on);
+      worker.current?.terminate();
+    };
+  }, []);
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "instant" });
+  }, [screen, tab, step, session?.index]);
+  const solved = progress.attempts.length;
+  const today = new Date().toLocaleDateString("sv-SE");
+  const mainRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    if (mainRef.current) mainRef.current.scrollTop = 0;
+  }, [screen, tab, step, session?.index]);
+  const task = session?.tasks[session.index];
+  function openLesson(l: Lesson, restart = false) {
+    const next = restart
+      ? 0
+      : Math.min(progress.reading?.[l.id] ?? 0, l.slides.length - 1);
+    setLesson(l);
+    setStep(next);
+    setProgress((p) => ({
+      ...p,
+      lastLesson: l.id,
+      reading: { ...p.reading, [l.id]: next },
+    }));
+    setScreen("lesson");
+  }
+  function readStep(next: number) {
+    setStep(next);
+    setProgress((p) => ({
+      ...p,
+      lastLesson: lesson.id,
+      reading: { ...p.reading, [lesson.id]: next },
+    }));
+  }
+  function resetAnswer() {
+    setAnswer("");
+    setSelected([]);
+    setGraded(null);
+    setHint(false);
+  }
+  function start(skills: Skill[] = allSkills, review = false) {
+    setError("");
+    resetAnswer();
+    if (review) {
+      const tasks = progress.mistakes.slice(0, 5);
+      if (!tasks.length) return;
+      setSession({ tasks, index: 0, results: [], review: true });
+      setScreen("session");
+      return;
+    }
+    setLoading(true);
+    worker.current?.terminate();
+    const w = new Worker(new URL("./training.worker.ts", import.meta.url), {
+      type: "module",
+    });
+    worker.current = w;
+    w.onmessage = (event: MessageEvent<{ tasks?: Task[]; error?: string }>) => {
+      setLoading(false);
+      w.terminate();
+      if (event.data.error || !event.data.tasks) {
+        setError("Не удалось создать задачи. Попробуйте ещё раз.");
+        return;
+      }
+      setSession({
+        tasks: event.data.tasks,
+        index: 0,
+        results: [],
+        review: false,
+      });
+      setScreen("session");
+    };
+    w.onerror = () => {
+      setLoading(false);
+      setError("Не удалось загрузить тренажёр. Перезагрузите приложение.");
+      w.terminate();
+    };
+    w.postMessage({ skills: shuffle(skills), count: 5 });
+  }
+  function similar() {
+    if (!task || !session || loading) return;
+    setLoading(true);
+    const w = new Worker(new URL("./training.worker.ts", import.meta.url), {
+      type: "module",
+    });
+    worker.current = w;
+    w.onmessage = (e: MessageEvent<{ tasks?: Task[]; error?: string }>) => {
+      setLoading(false);
+      w.terminate();
+      if (!e.data.tasks?.length) {
+        setError("Не удалось подготовить похожую задачу.");
+        return;
+      }
+      const tasks = [...session.tasks];
+      tasks.splice(session.index + 1, 0, e.data.tasks[0]);
+      setSession({ ...session, tasks, index: session.index + 1 });
+      resetAnswer();
+    };
+    w.onerror = () => {
+      setLoading(false);
+      setError("Не удалось подготовить похожую задачу.");
+      w.terminate();
+    };
+    w.postMessage({ skills: [task.skill], count: 1, similarTo: task });
+  }
+  function submit() {
+    if (!task || !session || graded !== null) return;
+    const correct = check(task, answer, selected);
+    setGraded(correct);
+    setProgress((p) => record(p, task, correct, hint));
+    setSession({ ...session, results: [...session.results, correct] });
+  }
+  function next() {
+    if (!session) return;
+    if (session.index === session.tasks.length - 1) setScreen("summary");
+    else {
+      setSession({ ...session, index: session.index + 1 });
+      resetAnswer();
+    }
+  }
+  function finishLesson() {
+    setProgress((p) => ({
+      ...p,
+      lessons: [...new Set([...p.lessons, lesson.id])],
+    }));
+  }
+  const back = () => {
+    if (screen === "session" && graded === null) setQuit(true);
+    else setScreen("main");
+  };
+  function exportProgress() {
+    const url = URL.createObjectURL(
+      new Blob([JSON.stringify(progress, null, 2)], {
+        type: "application/json",
+      }),
+    );
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `river-progress-${today}.json`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+  async function importProgress(file: File | undefined) {
+    if (!file) return;
+    try {
+      if (file.size > 5_000_000) throw Error();
+      const parsed = JSON.parse(await file.text());
+      if (!validProgress(parsed)) throw Error();
+      setProgress(parsed);
+      setStorageBlocked(false);
+      setError("Резервная копия восстановлена.");
+    } catch {
+      setError(
+        "Файл не похож на резервную копию PokChe. Текущий прогресс сохранён.",
+      );
+    }
+  }
+  return (
+    <div className="app">
+      <header className="topbar">
+        <button
+          className="brand"
+          onClick={() => {
+            if (screen === "session") setQuit(true);
+            else setScreen("main");
+          }}
+          aria-label="PokChe — на главную"
+        >
+          <Logo />
+          PokChe
+        </button>
+        <button
+          className="icon-button"
+          aria-label="Настройки и установка"
+          onClick={() => {
+            if (screen === "session") setQuit(true);
+            else setScreen("settings");
+          }}
+        >
+          <Settings2 size={21} />
+        </button>
+      </header>
+      {!online && (
+        <div className="status-note">
+          <WifiOff size={15} /> Без интернета · прогресс на устройстве
+        </div>
+      )}
+      {storageError && (
+        <div className="notice" role="alert">
+          {storageError}
+        </div>
+      )}
+      {error && (
+        <div className="notice" role="status">
+          {error}
+          <button onClick={() => setError("")} aria-label="Закрыть уведомление">
+            <X size={16} />
+          </button>
+        </div>
+      )}
+      {needRefresh && screen === "main" && (
+        <div className="notice">
+          Есть обновление{" "}
+          <button onClick={() => updateServiceWorker(true)}>Обновить</button>
+        </div>
+      )}
+      <main
+        ref={mainRef}
+        className={
+          screen === "main" && tab === "learn" ? "main-home" : "main-content"
+        }
+      >
+        {screen === "main" && tab === "learn" && (
+          <Home
+            progress={progress}
+            onOpen={openLesson}
+            scrollPosition={homeScroll.current}
+            onScroll={(v) => {
+              homeScroll.current = v;
+            }}
+          />
+        )}
+        {screen === "main" && tab === "train" && (
+          <>
+            <h1>Тренажёры</h1>
+            <p className="lead">Пять задач на выбранный навык.</p>
+            <button
+              className="feature-action"
+              onClick={() => start()}
+              disabled={loading}
+            >
+              <span className="feature-icon">
+                <Sparkles />
+              </span>
+              <span>
+                <strong>Смешанная тренировка</strong>
+                <small>5 задач · разные навыки</small>
+              </span>
+              <ArrowRight />
+            </button>
+            <button
+              className="review-action"
+              disabled={!progress.mistakes.length || loading}
+              onClick={() => start([], true)}
+            >
+              <RotateCcw size={21} />
+              <span>
+                <strong>Повторить ошибки</strong>
+                <small>
+                  {progress.mistakes.length
+                    ? `${progress.mistakes.length} задач ждут разбора`
+                    : "Пока нет ошибок для повторения"}
+                </small>
+              </span>
+              <ChevronRight size={19} />
+            </button>
+            <div className="section-heading">
+              <h2>Выберите навык</h2>
+              <span>11 тренажёров</span>
+            </div>
+            <div className="skill-list">
+              {allSkills.map((s, i) => (
+                <button key={s} disabled={loading} onClick={() => start([s])}>
+                  <span className="skill-index">
+                    {String(i + 1).padStart(2, "0")}
+                  </span>
+                  <span>
+                    <strong>{skillNames[s]}</strong>
+                    <small>
+                      {s === "equity"
+                        ? "Конкретная рука · полный перебор"
+                        : s === "spr"
+                          ? "Оставшийся стек ÷ банк"
+                          : "Точный ответ · 5 новых задач"}
+                    </small>
+                  </span>
+                  <ChevronRight size={18} />
+                </button>
+              ))}
+            </div>
+            <button
+              className="review-action"
+              onClick={() => setScreen("matrix")}
+            >
+              <Grid2X2 size={21} />
+              <span>
+                <strong>Матрица стартовых рук</strong>
+                <small>Исследуйте 169 типов рук</small>
+              </span>
+              <ChevronRight size={18} />
+            </button>
+            <details className="info-box">
+              <summary>Почему нет стратегических оценок?</summary>
+              <p>{sourceReview.reason}</p>
+              <p>
+                «Собери диапазон», префлоп-действия и солверные задачи появятся
+                после подключения проверенного набора. Турнирная ветка пока в
+                программе развития.
+              </p>
+              <a href={sourceReview.url} target="_blank" rel="noreferrer">
+                Посмотреть источник ↗
+              </a>
+            </details>
+          </>
+        )}
+        {screen === "main" && tab === "progress" && (
+          <>
+            <h1>Мой прогресс</h1>
+            <p className="lead">Прочитанные уроки и результаты практики.</p>
+            <div className="stats">
+              <div>
+                <strong>{solved}</strong>
+                <span>решено задач</span>
+              </div>
+              <div>
+                <strong>
+                  {solved
+                    ? Math.round(
+                        (progress.attempts.filter((a) => a.correct).length /
+                          solved) *
+                          100,
+                      )
+                    : 0}
+                  <small>%</small>
+                </strong>
+                <span>верных ответов</span>
+              </div>
+              <div>
+                <strong>{progress.days.length}</strong>
+                <span>дней практики</span>
+              </div>
+            </div>
+            <section className="progress-card">
+              <div className="section-heading">
+                <h2>Уроки изучены</h2>
+                <strong>
+                  {progress.lessons.length}/
+                  {lessons.filter((l) => l.ready).length}
+                </strong>
+              </div>
+              <Bar
+                value={
+                  (progress.lessons.length /
+                    lessons.filter((l) => l.ready).length) *
+                  100
+                }
+              />
+              <p>Урок завершён и навык освоен — разные достижения.</p>
+            </section>
+            <div className="section-heading">
+              <h2>Ваши навыки</h2>
+              <span>Последние 10 ответов</span>
+            </div>
+            <div className="mastery-list">
+              {allSkills.map((s) => {
+                const m = mastery(progress, s);
+                return (
+                  <button key={s} onClick={() => start([s])} disabled={loading}>
+                    <div>
+                      <strong>{skillNames[s]}</strong>
+                      <span>
+                        {m.mastered ? (
+                          <CheckCircle2 size={17} />
+                        ) : m.total ? (
+                          `${m.accuracy}%`
+                        ) : (
+                          "—"
+                        )}
+                      </span>
+                    </div>
+                    <Bar value={m.total ? m.accuracy : 0} />
+                    <small>
+                      {m.mastered
+                        ? "Освоен"
+                        : m.total
+                          ? `${m.total}/10 ответов без подсказки`
+                          : "Ещё не тренировались"}
+                    </small>
+                  </button>
+                );
+              })}
+            </div>
+            <p className="muted">
+              Освоен: минимум 8 верных из последних 10 ответов без подсказки.
+              Это учебный ориентир.
+            </p>
+            <button
+              className="primary"
+              disabled={!progress.mistakes.length || loading}
+              onClick={() => start([], true)}
+            >
+              Повторить ошибки · {progress.mistakes.length}
+              <RotateCcw size={18} />
+            </button>
+          </>
+        )}
+        {screen === "lesson" && (
+          <LessonReader
+            key={lesson.id}
+            lesson={lesson}
+            step={step}
+            progress={progress}
+            onStep={readStep}
+            onBack={back}
+            onComplete={finishLesson}
+            onTrain={() => start(lesson.skills)}
+            onFormat={(format) => setProgress((p) => ({ ...p, format }))}
+            loading={loading}
+          />
+        )}
+        {screen === "session" && task && session && (
+          <>
+            <div className="session-heading">
+              <button
+                className="icon-button"
+                aria-label="Выйти из тренировки"
+                onClick={back}
+              >
+                <X size={21} />
+              </button>
+              <span>
+                {session.review ? "Повторение ошибок" : "Короткая практика"}
+              </span>
+              <strong>
+                {session.index + 1}
+                <span> / {session.tasks.length}</span>
+              </strong>
+            </div>
+            <Bar
+              value={
+                ((session.index + (graded !== null ? 1 : 0)) /
+                  session.tasks.length) *
+                100
+              }
+            />
+            <div className="task-type">
+              <ShieldCheck size={14} />{" "}
+              {task.skill === "equity"
+                ? "Точный расчёт · оценка округлена"
+                : "Точный ответ"}
+            </div>
+            <h1 className="task-title">{task.title}</h1>
+            {task.context && <p className="context">{task.context}</p>}
+            {(task.cards || task.board) && (
+              <section
+                className={
+                  "table " + (task.skill === "cards" ? "comparison-table" : "")
+                }
+              >
+                <div className="table-label">
+                  {task.opponent
+                    ? "ВСКРЫТИЕ / ИЗВЕСТНЫЕ РУКИ"
+                    : "УЧЕБНАЯ СИТУАЦИЯ"}
+                </div>
+                {task.opponent && (
+                  <div className="hand">
+                    <span>Соперник</span>
+                    <Cards cards={task.opponent} />
+                  </div>
+                )}
+                {task.board && (
+                  <div className="board">
+                    <span>Общие карты</span>
+                    <Cards cards={task.board} />
+                  </div>
+                )}
+                {task.cards && (
+                  <div className="hand">
+                    <span>
+                      {task.opponent || task.board
+                        ? "Ваша рука"
+                        : task.selection
+                          ? "Нажмите на пять карт"
+                          : "Карты"}
+                    </span>
+                    <div
+                      className={`cards ${task.selection ? "select-cards" : ""}`}
+                    >
+                      {task.cards.map((c) => (
+                        <Card
+                          card={c}
+                          key={c}
+                          active={selected.includes(c)}
+                          onClick={
+                            task.selection && graded === null
+                              ? () =>
+                                  setSelected((p) =>
+                                    p.includes(c)
+                                      ? p.filter((x) => x !== c)
+                                      : p.length < 5
+                                        ? [...p, c]
+                                        : p,
+                                  )
+                              : undefined
+                          }
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </section>
+            )}
+            <h2 className="prompt">{task.prompt}</h2>
+            <details className="task-glossary" key={task.id}>
+              <summary>Объяснить термины</summary>
+              <p>{glossary[task.skill]}</p>
+            </details>
+            {task.selection ? (
+              <p className="muted">
+                Выбрано {selected.length} из 5. Любая равноценная лучшая пятёрка
+                принимается.
+              </p>
+            ) : (
+              <div className="choices">
+                {task.choices.map((c) => (
+                  <button
+                    key={c}
+                    disabled={graded !== null}
+                    aria-pressed={answer === c}
+                    onClick={() => setAnswer(c)}
+                    className={`${answer === c ? "chosen" : ""} ${graded !== null && c === task.answer ? "correct" : ""} ${graded === false && answer === c ? "wrong" : ""}`}
+                  >
+                    {c}
+                    {graded !== null && c === task.answer ? (
+                      <Check size={20} />
+                    ) : (
+                      <span className="radio" />
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
+            {graded === null ? (
+              <>
+                <button className="hint" onClick={() => setHint(true)}>
+                  <Lightbulb size={17} /> Нужна подсказка
+                </button>
+                {hint && (
+                  <Sava pose="thinking">
+                    <p>{task.hint}</p>
+                  </Sava>
+                )}
+                <button
+                  className="primary"
+                  disabled={task.selection ? selected.length !== 5 : !answer}
+                  onClick={submit}
+                >
+                  Проверить ответ <ArrowRight size={18} />
+                </button>
+              </>
+            ) : (
+              <>
+                <div
+                  className={`feedback ${graded ? "success" : "retry"}`}
+                  role="status"
+                >
+                  <strong>
+                    {graded ? (
+                      <CheckCircle2 size={20} />
+                    ) : (
+                      <Lightbulb size={20} />
+                    )}{" "}
+                    {graded
+                      ? "Верно. Так держать!"
+                      : "Ошибка — повод разобраться"}
+                  </strong>
+                  <Sava pose={graded ? "explain" : "try-again"}>
+                    <p>{task.explanation}</p>
+                  </Sava>
+                  {task.details && (
+                    <details>
+                      <summary>Подробнее о проверке</summary>
+                      <p>{task.details}</p>
+                    </details>
+                  )}
+                  {!graded && (
+                    <>
+                      <small>Задача сохранена в повторениях.</small>
+                      <button
+                        className="text-button"
+                        disabled={loading}
+                        onClick={similar}
+                      >
+                        Решить похожую задачу
+                      </button>
+                    </>
+                  )}
+                </div>
+                <button className="primary" onClick={next}>
+                  {session.index === session.tasks.length - 1
+                    ? "Завершить тренировку"
+                    : "Следующая задача"}
+                  <ArrowRight size={18} />
+                </button>
+              </>
+            )}
+          </>
+        )}
+        {screen === "summary" && session && (
+          <section className="summary">
+            <Sava pose="celebrate">
+              <p>Готово! Можно закрепить навык или закончить на сегодня.</p>
+            </Sava>
+            <h1>Практика завершена</h1>
+            <div className="big-result">
+              {session.results.filter(Boolean).length}
+              <span> / {session.tasks.length}</span>
+            </div>
+            <p>верных ответов</p>
+            <div className="result-dots">
+              {session.results.map((r, i) => (
+                <span className={r ? "ok" : "miss"} key={i}>
+                  {r ? <Check size={18} /> : <RotateCcw size={16} />}
+                </span>
+              ))}
+            </div>
+            <p className="lead">
+              {session.results.every(Boolean)
+                ? "Отличная работа. Закрепите навык новой подборкой."
+                : "Ошибки сохранены. Короткое повторение поможет закрепить разбор."}
+            </p>
+            <button
+              className="primary"
+              onClick={() =>
+                start([...new Set(session.tasks.map((t) => t.skill))])
+              }
+              disabled={loading}
+            >
+              Ещё пять новых задач
+              <ArrowRight size={18} />
+            </button>
+            {progress.mistakes.length > 0 && (
+              <button className="secondary" onClick={() => start([], true)}>
+                Повторить ошибки · {progress.mistakes.length}
+              </button>
+            )}
+            <button
+              className="text-button"
+              onClick={() => {
+                setTab("progress");
+                setScreen("main");
+              }}
+            >
+              Посмотреть прогресс
+            </button>
+            <div className="small-note">
+              <ShieldCheck size={16} />
+              {storageError
+                ? "Проверьте сохранение в настройках"
+                : "Прогресс сохранён на устройстве"}
+            </div>
+          </section>
+        )}
+        {screen === "matrix" && (
+          <>
+            <button className="back" onClick={back}>
+              <ArrowLeft size={18} /> К тренажёрам
+            </button>
+            <div className="eyebrow">ИССЛЕДУЕМ РУКИ</div>
+            <h1>Матрица рук</h1>
+            <p className="lead">
+              Выберите клетку или найдите руку в списке. Это свободная матрица,
+              без оценки стратегии.
+            </p>
+            <RangeMatrix />
+            <div className="info-box">
+              <strong>«Собери диапазон» — следующий этап</strong>
+              <p>
+                Проверенного набора пока нет. Выбранные клетки не являются
+                рекомендацией к розыгрышу.
+              </p>
+            </div>
+          </>
+        )}
+        {screen === "settings" && (
+          <>
+            <button className="back" onClick={back}>
+              <ArrowLeft size={18} /> Назад
+            </button>
+            <h1>Всё под рукой.</h1>
+            <p className="lead">PokChe · версия 0.1 · личная практика</p>
+            <section className="info-box">
+              <h2>
+                <Download size={20} /> На главный экран
+              </h2>
+              <p>
+                <strong>iPhone:</strong> откройте HTTPS-ссылку в Safari →
+                «Поделиться» → «На экран Домой». Если есть переключатель
+                «Открывать как веб-приложение», включите его.
+              </p>
+              <p>
+                <strong>Android:</strong> откройте HTTPS-ссылку в Chrome → меню
+                ⋮ → «Добавить на главный экран» → «Установить» (название зависит
+                от версии).
+              </p>
+              <p>
+                <strong>
+                  {offlineReady || cached
+                    ? "Базовые материалы готовы офлайн."
+                    : "Офлайн-копия ещё не подтверждена."}
+                </strong>{" "}
+                Первый запуск нужен с интернетом. Откройте установленное
+                приложение и дождитесь готовности офлайн.
+              </p>
+              <p className="muted">
+                На телефоне адрес http://IP-компьютера не даёт полноценную PWA.
+                Нужен HTTPS. На компьютере localhost подходит для проверки.
+              </p>
+            </section>
+            <section className="info-box">
+              <h2>Прогресс на устройстве</h2>
+              <p>
+                Без аккаунта и синхронизации. Очистка данных браузера удалит
+                прогресс. Safari и установленное приложение могут хранить его
+                отдельно — используйте резервную копию.
+              </p>
+              <button className="secondary" onClick={exportProgress}>
+                Скачать резервную копию
+              </button>
+              <label className="file-label">
+                Восстановить из файла
+                <input
+                  type="file"
+                  accept="application/json,.json"
+                  onChange={(e) => {
+                    void importProgress(e.target.files?.[0]);
+                    e.target.value = "";
+                  }}
+                />
+              </label>
+              <p className="muted">
+                Восстановление заменит текущий прогресс данными файла.
+              </p>
+            </section>
+            <section className="info-box">
+              <h2>Направление</h2>
+              <div className="toggle">
+                <button
+                  className={progress.format === "cash" ? "active" : ""}
+                  onClick={() => setProgress((p) => ({ ...p, format: "cash" }))}
+                >
+                  Кэш
+                </button>
+                <button
+                  className={progress.format === "tournament" ? "active" : ""}
+                  onClick={() =>
+                    setProgress((p) => ({ ...p, format: "tournament" }))
+                  }
+                >
+                  Турниры
+                </button>
+              </div>
+              <p>
+                {progress.format === "cash"
+                  ? "Планируемый профиль: 6-max, 100 BB. Стратегические задачи ждут проверенных условий."
+                  : "Рекомендуем: основы → префлоп и математика → короткие стеки → EV и выплаты → ICM. Турнирные задачи ещё не подключены."}
+              </p>
+            </section>
+            <details className="info-box">
+              <summary>Источники и точность</summary>
+              <p>
+                Правила и формулы проверяются детерминированно. Эквити на тёрне
+                — полный перебор 44 риверов против указанной руки; ничья даёт
+                половину банка. Симуляция не используется.
+              </p>
+              <p>
+                {sourceReview.name} · проверка {sourceReview.checked}.{" "}
+                {sourceReview.reason}
+              </p>
+              <a href={sourceReview.url} target="_blank" rel="noreferrer">
+                Исходный PDF ↗
+              </a>
+              <p>
+                Постфлоп-солвер b-inary исследован: AGPL-3.0, разработка
+                приостановлена. Код не встроен, рассчитанной базы в приложении
+                нет.
+              </p>
+              <a
+                href="https://github.com/b-inary/postflop-solver"
+                target="_blank"
+                rel="noreferrer"
+              >
+                Репозиторий солвера ↗
+              </a>
+            </details>
+          </>
+        )}
+      </main>
+      {loading && (
+        <div className="loading" role="status">
+          <span className="spinner" /> Готовим новые задачи…
+        </div>
+      )}
+      {quit && (
+        <div className="modal-backdrop">
+          <section
+            className="modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="quit-title"
+          >
+            <h2 id="quit-title">Закончить сейчас?</h2>
+            <p>
+              Проверенные ответы уже сохранены. Незавершённая задача не
+              учитывается.
+            </p>
+            <button
+              autoFocus
+              className="primary"
+              onClick={() => setQuit(false)}
+            >
+              Продолжить тренировку
+            </button>
+            <button
+              className="secondary"
+              onClick={() => {
+                setQuit(false);
+                setScreen("main");
+              }}
+            >
+              Выйти
+            </button>
+          </section>
+        </div>
+      )}
+      {screen === "main" && (
+        <nav className="bottom-nav" aria-label="Основная навигация">
+          {(
+            [
+              { id: "learn", label: "Обучение", Icon: BookOpen },
+              { id: "train", label: "Тренажёры", Icon: Target },
+              {
+                id: "progress",
+                label: "Мой прогресс",
+                Icon: ChartNoAxesColumnIncreasing,
+              },
+            ] as const
+          ).map(({ id, label, Icon }) => (
+            <button
+              aria-current={tab === id ? "page" : undefined}
+              className={tab === id ? "active" : ""}
+              key={id}
+              onClick={() => setTab(id)}
+            >
+              <Icon size={22} />
+              <span>{label}</span>
+            </button>
+          ))}
+        </nav>
+      )}
+    </div>
+  );
 }
 
-function RangeMatrix(){const rs=[...'AKQJT98765432'];const labels=rs.flatMap((a,i)=>rs.map((b,j)=>i===j?a+b:i<j?a+b+'s':b+a+'o'));const [cell,setCell]=useState('AA');const [marked,setMarked]=useState<string[]>([]);return <><div className="matrix" aria-label="Матрица стартовых рук">{labels.map(l=><button key={l} aria-label={l} aria-pressed={cell===l} className={`${l.length===2?'pair':l.endsWith('s')?'suited':'offsuit'} ${cell===l?'focused':''} ${marked.includes(l)?'marked':''}`} onClick={()=>setCell(l)}>{l}</button>)}</div><section className="cell-editor"><label htmlFor="hand-select">Выбрать руку крупным списком</label><select id="hand-select" value={cell} onChange={e=>setCell(e.target.value)}>{labels.map(l=><option key={l}>{l}</option>)}</select><div className="cell-description"><strong>{cell}</strong><span>{cell.length===2?'Пара · 6 комбинаций':cell.endsWith('s')?'Одной масти · 4 комбинации':'Разных мастей · 12 комбинаций'}</span></div><button className="primary" onClick={()=>setMarked(p=>p.includes(cell)?p.filter(x=>x!==cell):[...p,cell])}>{marked.includes(cell)?'Убрать из набора':'Добавить в набор'}{marked.includes(cell)?<X size={18}/>:<Check size={18}/>}</button><p className="muted">Выбрано {marked.length} типов рук · учебный черновик</p><button className="text-button" onClick={()=>setMarked([])} disabled={!marked.length}>Очистить набор</button></section></>;}
+function RangeMatrix() {
+  const rs = [..."AKQJT98765432"];
+  const labels = rs.flatMap((a, i) =>
+    rs.map((b, j) => (i === j ? a + b : i < j ? a + b + "s" : b + a + "o")),
+  );
+  const [cell, setCell] = useState("AA");
+  const [marked, setMarked] = useState<string[]>([]);
+  return (
+    <>
+      <div className="matrix" aria-label="Матрица стартовых рук">
+        {labels.map((l) => (
+          <button
+            key={l}
+            aria-label={l}
+            aria-pressed={cell === l}
+            className={`${l.length === 2 ? "pair" : l.endsWith("s") ? "suited" : "offsuit"} ${cell === l ? "focused" : ""} ${marked.includes(l) ? "marked" : ""}`}
+            onClick={() => setCell(l)}
+          >
+            {l}
+          </button>
+        ))}
+      </div>
+      <section className="cell-editor">
+        <label htmlFor="hand-select">Выбрать руку крупным списком</label>
+        <select
+          id="hand-select"
+          value={cell}
+          onChange={(e) => setCell(e.target.value)}
+        >
+          {labels.map((l) => (
+            <option key={l}>{l}</option>
+          ))}
+        </select>
+        <div className="cell-description">
+          <strong>{cell}</strong>
+          <span>
+            {cell.length === 2
+              ? "Пара · 6 комбинаций"
+              : cell.endsWith("s")
+                ? "Одной масти · 4 комбинации"
+                : "Разных мастей · 12 комбинаций"}
+          </span>
+        </div>
+        <button
+          className="primary"
+          onClick={() =>
+            setMarked((p) =>
+              p.includes(cell) ? p.filter((x) => x !== cell) : [...p, cell],
+            )
+          }
+        >
+          {marked.includes(cell) ? "Убрать из набора" : "Добавить в набор"}
+          {marked.includes(cell) ? <X size={18} /> : <Check size={18} />}
+        </button>
+        <p className="muted">
+          Выбрано {marked.length} типов рук · учебный черновик
+        </p>
+        <button
+          className="text-button"
+          onClick={() => setMarked([])}
+          disabled={!marked.length}
+        >
+          Очистить набор
+        </button>
+      </section>
+    </>
+  );
+}
