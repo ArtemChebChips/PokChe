@@ -1735,24 +1735,6 @@ p {
 .card-center > .ace-pip {
   font-size: 27px;
 }
-.card .court-placeholder {
-  inset: 23% 25%;
-  border: 1px solid currentColor;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  background: #f6f0da;
-}
-.court-placeholder b {
-  font-size: 19px;
-  font-weight: 700;
-}
-.court-placeholder > i {
-  position: static;
-  font-size: 13px;
-}
 .card.red {
   color: #b84848;
 }
@@ -1779,9 +1761,6 @@ p {
 .comparison-table .card-center {
   font-size: 19px;
 }
-.comparison-table .court-placeholder b {
-  font-size: 30px;
-}
 .comparison-table .ace-pip {
   font-size: 40px;
 }
@@ -1794,9 +1773,6 @@ p {
 }
 .reader .card-center {
   font-size: 16px;
-}
-.reader .court-placeholder b {
-  font-size: 26px;
 }
 .session-heading {
   margin: 0 0 12px;
@@ -2006,4 +1982,42 @@ p {
     width: 43px;
     height: 43px;
   }
+}
+
+.card .court-art {
+  inset: 2.5% 0;
+  display: block;
+}
+.court-art img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.card .card-index {
+  z-index: 1;
+}
+.card-back {
+  overflow: hidden;
+  background: #fffefa;
+  padding: 0;
+}
+.card-back > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.card-back-example {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border-top: 1px solid var(--line);
+  padding-top: 15px;
+  margin-top: 15px;
+}
+.card-back-example p {
+  margin: 0;
+  flex: 1;
+  font-size: 13px;
 }

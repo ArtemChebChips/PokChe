@@ -75,6 +75,6 @@ npm run test:e2e
 - `src/App.tsx`, `src/style.css` — мобильный интерфейс.
 - `vite.config.ts` — сборка, манифест и офлайн-кэш.
 
-Графика пакета A подключена в `public/art`, Сава — в `public/sava`. [Состояние графики](docs/ASSET-INTEGRATION.md). Центральные рисунки J/Q/K пока временные, ожидается пакет B. `package-lock.json` фиксирует фактически установленные версии зависимостей.
+Графика пакета A подключена в `public/art`, Сава — в `public/sava`. [Состояние графики](docs/ASSET-INTEGRATION.md). Пакет B подключён: рисунки J/Q/K и рубашка находятся в public/cards и доступны офлайн. `package-lock.json` фиксирует фактически установленные версии зависимостей.
 
 Для проверки пути GitHub Pages в PowerShell установите `$env:PAGES_BASE_PATH="/PokChe/"` перед сборкой и запуском preview, а также `$env:E2E_PATH="/PokChe/"` перед браузерными тестами.

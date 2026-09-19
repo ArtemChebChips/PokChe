@@ -2,7 +2,7 @@ import { ArrowLeft, ArrowRight, CheckCircle2, RotateCcw } from "lucide-react";
 import { useState } from "react";
 import type { Lesson } from "../content";
 import type { Progress } from "../progress";
-import { Cards } from "./PlayingCard";
+import { Cards, CardBack } from "./PlayingCard";
 import { Sava } from "./Sava";
 
 export function LessonReader({
@@ -110,6 +110,15 @@ export function LessonReader({
           </div>
         )}
         <p>{slide.example}</p>
+        {lesson.id === "cards" && step === 1 && (
+          <div className="card-back-example">
+            <CardBack />
+            <p>
+              Это рубашка — оборот карты. Пока карта закрыта, её достоинство и
+              масть не видны.
+            </p>
+          </div>
+        )}
       </div>
       {lesson.id === "cards" && step === 2 && (
         <Sava pose="explain">

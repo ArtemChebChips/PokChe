@@ -17,6 +17,7 @@ const ranks: Record<string, string> = {
   J: "Валет",
   T: "Десятка",
 };
+const courtArt: Record<string, string> = { J: "jack", Q: "queen", K: "king" };
 const positions: Record<string, [number, number][]> = {
   A: [[50, 50]],
   "2": [
@@ -110,9 +111,7 @@ export function Card({
         <i>{suit}</i>
       </span>
       <span
-        className={
-          "card-center " + (positions[card[0]] ? "" : "court-placeholder")
-        }
+        className={"card-center " + (positions[card[0]] ? "" : "court-art")}
         aria-hidden="true"
       >
         {positions[card[0]] ? (
@@ -131,10 +130,18 @@ export function Card({
             </i>
           ))
         ) : (
-          <>
-            <b>{rank}</b>
-            <i>{suit}</i>
-          </>
+          <img
+            src={
+              import.meta.env.BASE_URL +
+              "cards/court-" +
+              courtArt[card[0]] +
+              ".png"
+            }
+            alt=""
+            width="512"
+            height="640"
+            draggable={false}
+          />
         )}
       </span>
       <span className="card-index bottom" aria-hidden="true">
@@ -171,5 +178,19 @@ export function Cards({ cards }: { cards: string[] }) {
         <Card key={c} card={c} />
       ))}
     </div>
+  );
+}
+
+export function CardBack() {
+  return (
+    <span className="card card-back" role="img" aria-label="Закрытая карта">
+      <img
+        src={import.meta.env.BASE_URL + "cards/card-back.svg"}
+        alt=""
+        width="480"
+        height="672"
+        draggable={false}
+      />
+    </span>
   );
 }
