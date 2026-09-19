@@ -36,9 +36,6 @@ for (const [width, height] of [
           () => !!document.activeElement?.closest('[role="dialog"]'),
         ),
       ).toBe(true);
-      const box = await dialog.boundingBox();
-      const content = await page.locator("main").boundingBox();
-      expect(box!.y).toBeGreaterThanOrEqual(content!.y + content!.height - 1);
       expect(
         await dialog
           .locator("img")
@@ -50,7 +47,13 @@ for (const [width, height] of [
       });
       await next.scrollIntoViewIfNeeded();
       const b = await next.boundingBox();
-      expect(b!.y + b!.height).toBeLessThanOrEqual(height + 1);
+      const nav = await page.locator(".bottom-nav").boundingBox();
+      expect(nav!.y + nav!.height).toBeCloseTo(height, 0);
+      expect(b!.y + b!.height).toBeLessThanOrEqual(nav!.y + 1);
+      expect(await page.locator(".app").evaluate((e) => e.scrollTop)).toBe(0);
+      expect(await dialog.evaluate((e) => e.closest("main") !== null)).toBe(
+        true,
+      );
       if ([0, 2, 5, 7].includes(i))
         await page.screenshot({ path: `test-results/tour-${width}-${i}.png` });
       await next.click();
@@ -113,4 +116,22 @@ test("пропуск, повтор, назад, Escape и офлайн без а
   await expect(
     page.getByRole("button", { name: "PokChe — на главную" }),
   ).toBeFocused();
+});
+
+test("сброс приветствия и повторный вход сохраняют нижнюю панель", async ({ page }) => {
+ await page.goto(root);
+ await page.getByRole("button", {name:"Пропустить экскурсию"}).click();
+ await page.getByRole("button", {name:"Настройки и установка"}).click();
+ await page.getByRole("button", {name:"Показать приветствие при следующем входе",exact:true}).click();
+ await page.reload();
+ await expect(page.getByRole("dialog")).toBeVisible();
+ const before=await page.locator(".bottom-nav").boundingBox();
+ await page.getByRole("dialog").getByRole("button", {name:"Покажи",exact:true}).click();
+ await page.locator("main").evaluate(e=>e.scrollTop=e.scrollHeight);
+ const after=await page.locator(".bottom-nav").boundingBox();
+ expect(after!.y).toBe(before!.y);
+ expect(after!.y+after!.height).toBeCloseTo(page.viewportSize()!.height,0);
+ await expect(page.getByRole("dialog")).not.toContainText("В отличие от моего");
+ await page.getByRole("button", {name:"Пропустить экскурсию"}).click();
+ await expect(page.getByRole("button",{name:"Обучение",exact:true})).toBeVisible();
 });
