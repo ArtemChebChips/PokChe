@@ -9,26 +9,27 @@ export function WelcomeTour({
   onStep: (n: number) => void;
   onFinish: () => void;
 }) {
-  const dialog = useRef<HTMLDialogElement>(null);
+  const dialog = useRef<HTMLElement>(null);
   const nextButton = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     nextButton.current?.focus({ preventScroll: true });
   }, [step]);
   const s = tourSteps[step],
     last = step === tourSteps.length - 1;
-  useEffect(() => {
-    const d = dialog.current!;
-    d.showModal();
-    nextButton.current?.focus({ preventScroll: true });
-    return () => d.close();
-  }, []);
   return (
-    <dialog
+    <section
+      role="dialog"
+      aria-modal="true"
       ref={dialog}
       className={`tour-dialog tour-${s.place}`}
       aria-label="Экскурсия с Иванычем"
       aria-describedby="tour-text"
       onKeyDown={(e) => {
+        if (e.key === "Escape") {
+          e.preventDefault();
+          onFinish();
+          return;
+        }
         if (e.key !== "Tab") return;
         const buttons = Array.from(
           dialog.current!.querySelectorAll<HTMLButtonElement>(
@@ -44,10 +45,6 @@ export function WelcomeTour({
           e.preventDefault();
           first.focus();
         }
-      }}
-      onCancel={(e) => {
-        e.preventDefault();
-        onFinish();
       }}
     >
       <div key={step} className={`tour-scene tour-side-${s.side}`}>
@@ -89,6 +86,6 @@ export function WelcomeTour({
           </div>
         </section>
       </div>
-    </dialog>
+    </section>
   );
 }

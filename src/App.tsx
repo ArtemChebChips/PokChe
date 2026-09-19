@@ -352,7 +352,7 @@ export default function App() {
       className="app"
       data-tour={tourStep === null ? undefined : tourSteps[tourStep].target}
     >
-      <header className="topbar">
+      <header className="topbar" inert={tourStep !== null}>
         <button
           className="brand"
           onClick={() => {
@@ -400,6 +400,7 @@ export default function App() {
         </div>
       )}
       <main
+        inert={tourStep !== null}
         ref={mainRef}
         className={
           screen === "main" && tab === "learn" ? "main-home" : "main-content"
@@ -1156,7 +1157,11 @@ export default function App() {
         />
       )}
       {screen === "main" && (
-        <nav className="bottom-nav" aria-label="Основная навигация">
+        <nav
+          className="bottom-nav"
+          inert={tourStep !== null}
+          aria-label="Основная навигация"
+        >
           {(
             [
               { id: "learn", label: "Обучение", Icon: BookOpen },

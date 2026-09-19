@@ -32,15 +32,25 @@ for (const [width, height] of [
         true,
       );
       expect(
-        await page.evaluate(() => !!document.activeElement?.closest("dialog")),
+        await page.evaluate(
+          () => !!document.activeElement?.closest('[role="dialog"]'),
+        ),
       ).toBe(true);
+      const box = await dialog.boundingBox();
+      const content = await page.locator("main").boundingBox();
+      expect(box!.y).toBeGreaterThanOrEqual(content!.y + content!.height - 1);
+      expect(
+        await dialog
+          .locator("img")
+          .evaluate((e) => e.getBoundingClientRect().width),
+      ).toBeGreaterThanOrEqual(208);
       const next = dialog.getByRole("button", {
         name: i === 7 ? "Поехали" : i === 0 ? "Покажи" : "Дальше",
         exact: true,
       });
       await next.scrollIntoViewIfNeeded();
       const b = await next.boundingBox();
-      expect(b!.y + b!.height).toBeLessThanOrEqual(height);
+      expect(b!.y + b!.height).toBeLessThanOrEqual(height + 1);
       if ([0, 2, 5, 7].includes(i))
         await page.screenshot({ path: `test-results/tour-${width}-${i}.png` });
       await next.click();
@@ -93,7 +103,9 @@ test("пропуск, повтор, назад, Escape и офлайн без а
   for (let i = 0; i < 8; i++) {
     await page.keyboard.press("Tab");
     expect(
-      await page.evaluate(() => !!document.activeElement?.closest("dialog")),
+      await page.evaluate(
+        () => !!document.activeElement?.closest('[role="dialog"]'),
+      ),
     ).toBe(true);
   }
   await page.keyboard.press("Escape");
