@@ -1,4 +1,4 @@
-import { Suit } from "./Suit";
+import { suitPaths } from "./Suit";
 export const symbols: Record<string, string> = {
   s: "♠",
   h: "♥",
@@ -94,6 +94,73 @@ const positions: Record<string, [number, number][]> = {
     [68, 78],
   ],
 };
+export function CardFace({ card }: { card: string }) {
+  const rank = card[0] === "T" ? "10" : card[0];
+  const pip = (x: number, y: number, size: number) => (
+    <svg x={x} y={y} width={size} height={size} viewBox="0 0 24 24">
+      <path d={suitPaths[card[1]]} fill="currentColor" />
+    </svg>
+  );
+  return (
+    <svg
+      className="card-face"
+      viewBox="0 0 100 140"
+      aria-hidden="true"
+      focusable="false"
+    >
+      {positions[card[0]] ? (
+        positions[card[0]].map(([x, y], i) => {
+          const size = card[0] === "A" ? 34 : 15;
+          const cx = 22 + (x === 32 ? 24 : x === 68 ? 76 : x) * 0.56,
+            cy = 16 + y * 1.08;
+          return (
+            <g
+              key={i}
+              className="card-pip"
+              transform={`translate(${cx} ${cy}) rotate(${y > 50 ? 180 : 0})`}
+            >
+              {pip(-size / 2, -size / 2, size)}
+            </g>
+          );
+        })
+      ) : (
+        <image
+          href={
+            import.meta.env.BASE_URL +
+            "cards/court-" +
+            courtArt[card[0]] +
+            ".png"
+          }
+          x="0"
+          y="3"
+          width="100"
+          height="134"
+          preserveAspectRatio="xMidYMid meet"
+        />
+      )}
+      {[false, true].map((bottom) => (
+        <g
+          key={String(bottom)}
+          transform={bottom ? "translate(100 140) rotate(180)" : undefined}
+        >
+          <rect x="2" y="2" width="21" height="37" rx="3" fill="#fffefa" />
+          <text
+            x="12.5"
+            y="21"
+            textAnchor="middle"
+            fontFamily="Georgia, serif"
+            fontWeight="700"
+            fontSize={rank === "10" ? 19 : 22}
+            fill="currentColor"
+          >
+            {rank}
+          </text>
+          {pip(5.5, 23, 14)}
+        </g>
+      ))}
+    </svg>
+  );
+}
 export function Card({
   card,
   active = false,
@@ -104,56 +171,8 @@ export function Card({
   onClick?: () => void;
 }) {
   const rank = card[0] === "T" ? "10" : card[0];
-  const content = (
-    <>
-      <span className="card-index top">
-        <b>{rank}</b>
-        <i>
-          <Suit suit={card[1]} />
-        </i>
-      </span>
-      <span
-        className={"card-center " + (positions[card[0]] ? "" : "court-art")}
-        aria-hidden="true"
-      >
-        {positions[card[0]] ? (
-          positions[card[0]].map(([x, y], i) => (
-            <i
-              key={i}
-              className={card[0] === "A" ? "ace-pip" : ""}
-              style={{
-                left: (x === 32 ? 24 : x === 68 ? 76 : x) + "%",
-                top: y + "%",
-                transform:
-                  "translate(-50%,-50%)" + (y > 50 ? " rotate(180deg)" : ""),
-              }}
-            >
-              <Suit suit={card[1]} />
-            </i>
-          ))
-        ) : (
-          <img
-            src={
-              import.meta.env.BASE_URL +
-              "cards/court-" +
-              courtArt[card[0]] +
-              ".png"
-            }
-            alt=""
-            width="512"
-            height="640"
-            draggable={false}
-          />
-        )}
-      </span>
-      <span className="card-index bottom" aria-hidden="true">
-        <b>{rank}</b>
-        <i>
-          <Suit suit={card[1]} />
-        </i>
-      </span>
-    </>
-  );
+  // Все детали карты используют одни координаты и масштабируются вместе.
+  const content = <CardFace card={card} />;
   const cls =
     "card " +
     ("hd".includes(card[1]) ? "red " : "") +

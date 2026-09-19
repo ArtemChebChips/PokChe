@@ -4,11 +4,26 @@ const board = ["Qh", "8c", "3s", "Kd", "2h"];
 export function StreetCards({ count }: { count: number }) {
   return (
     <div className="street-cards">
-      <p className="street-caption">Общие карты · {count} из 5</p>
+      <p className="street-caption">
+        {count === 3
+          ? "Флоп · первые три карты"
+          : count === 4
+            ? "Тёрн · четвёртая карта"
+            : "Ривер · пятая карта"}
+      </p>
       <div className="street-board">
         {board.map((card, i) =>
           i < count ? (
-            <Card key={card} card={card} />
+            <span
+              key={card}
+              className={
+                count === 3 || i === count - 1
+                  ? "key-card street-new"
+                  : "street-previous"
+              }
+            >
+              <Card card={card} />
+            </span>
           ) : (
             <span
               key={card}

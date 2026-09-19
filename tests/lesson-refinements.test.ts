@@ -79,7 +79,9 @@ it("практика хода раздачи покрывает этапы и д
 });
 
 it("фулл-хаусы на одной доске сначала сравниваются по тройке, затем по паре", () => {
-  const hands = combinationSlides.find((s) => s.title === "Фулл-хаус")!.hands!;
+  const hands = combinationSlides.find(
+    (s) => s.title === "Как сравнить фулл-хаусы",
+  )!.hands!;
   const [board, hero, opponent] = hands.map((h) => h.cards);
   validate([...board, ...hero, ...opponent]);
   const a = solver.Hand.solve([...board, ...hero]),
@@ -92,4 +94,53 @@ it("фулл-хаусы на одной доске сначала сравнив
   const c = solver.Hand.solve(["Ts", "Th", "Td", "As", "Ac"]),
     d = solver.Hand.solve(["Ts", "Th", "Td", "Ks", "Kc"]);
   expect(solver.Hand.winners([c, d])).toEqual([c]);
+});
+
+it("игровые сцены: колл и рейз совпадают со ставками, вскрытия проверяет независимый решатель", () => {
+  for (let i = 0; i < 50; i++) {
+    for (const family of flowFamilies) {
+      const task = handFlowTask(family),
+        scene = task.scene!;
+      validate([
+        ...scene.cards,
+        ...scene.board,
+        ...(scene.opponent?.cards ?? []),
+      ]);
+      expect(scene.cards).toHaveLength(2);
+      expect(scene.previousPot).toBeGreaterThanOrEqual(0);
+      if (family === "call")
+        expect(Number(task.answer)).toBe(scene.bets.UTG - scene.bets.BB);
+      if (family === "raise")
+        expect(Number(task.answer)).toBe(2 * (scene.bets.UTG - scene.bets.BB));
+      if (family === "blind") {
+        expect(scene.hidePot).toBe(true);
+        expect(Number(task.answer)).toBe(scene.bets.SB + scene.bets.BB);
+      }
+      if (family === "showdown") {
+        const hero = solver.Hand.solve([...scene.cards, ...scene.board]);
+        const opponent = solver.Hand.solve([
+          ...scene.opponent!.cards,
+          ...scene.board,
+        ]);
+        const winners = solver.Hand.winners([hero, opponent]);
+        expect(task.answer).toBe(
+          winners.length === 2
+            ? "Делёж"
+            : winners[0] === hero
+              ? "Вы"
+              : "Соперник",
+        );
+      }
+    }
+  }
+});
+
+it("сцена повторения ошибок сохраняется и повреждённая сцена отклоняется", () => {
+  const task = handFlowTask("showdown");
+  const saved = JSON.parse(JSON.stringify(record(fresh(), task, false, false)));
+  expect(validProgress(saved)).toBe(true);
+  saved.mistakes[0].scene.board[0] = saved.mistakes[0].scene.cards[0];
+  expect(validProgress(saved)).toBe(false);
+  saved.mistakes[0].scene = null;
+  expect(validProgress(saved)).toBe(false);
 });

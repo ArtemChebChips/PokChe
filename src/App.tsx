@@ -1,3 +1,5 @@
+import { StackExample } from "./components/StackExample";
+import { PokerTable } from "./components/PokerTable";
 import { HandExample } from "./components/HandExample";
 import { CorrectBurst } from "./components/CorrectBurst";
 import { useEffect, useRef, useState } from "react";
@@ -589,6 +591,8 @@ export default function App() {
             </div>
             <h1 className="task-title">{task.title}</h1>
             {task.context && <p className="context">{task.context}</p>}
+            {task.stacks && <StackExample {...task.stacks} />}
+            {task.scene && <PokerTable scene={task.scene} />}
             {(task.cards || task.board) && (
               <section
                 className={

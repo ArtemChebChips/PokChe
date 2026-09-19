@@ -1,3 +1,5 @@
+import type { StackState } from "./components/StackExample";
+import type { FlowScene } from "./flowScene";
 import { handFlowTask, handFlowSession } from "./handFlowTasks";
 import { combinationTask, combinationSession } from "./combinationTasks";
 import { shuffle, pick } from "./random";
@@ -16,6 +18,8 @@ import {
 import { type Skill, skillNames } from "./content";
 export type CardKind = "figures" | "ace" | "equal" | "numbers";
 export type Task = {
+  scene?: FlowScene;
+  stacks?: StackState;
   variant?: CardKind;
   scenario?: string;
   revision?: number;
@@ -67,6 +71,7 @@ export function generate(skill: Skill): Task {
     const a = pick([20, 30, 40, 60, 80, 100]),
       b = pick([25, 40, 50, 75, 100, 120]),
       pot = pick([5, 10, 20]);
+    t.stacks = { hero: a, opponent: b, pot, unit: "BB" };
     t.context = `Один на один · в банке ${pot} BB`;
     t.prompt = `У вас осталось ${a} BB, у соперника ${b} BB. ${skill === "stack" ? "Какой эффективный оставшийся стек?" : "Чему равен SPR?"}`;
     const result = skill === "stack" ? Math.min(a, b) : spr(a, b, pot);

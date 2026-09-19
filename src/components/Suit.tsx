@@ -1,4 +1,4 @@
-const paths: Record<string, string> = {
+export const suitPaths: Record<string, string> = {
   h: "M12 21C9 18 2 13 2 7.5C2 1.8 9 1 12 6C15 1 22 1.8 22 7.5C22 13 15 18 12 21Z",
   d: "M12 1L22 12L12 23L2 12Z",
   s: "M12 1C9 5 2 9 2 14C2 19 8 21 11 16C11 19 9 21 8 23H16C15 21 13 19 13 16C16 21 22 19 22 14C22 9 15 5 12 1Z",
@@ -12,7 +12,7 @@ export function Suit({ suit }: { suit: string }) {
       aria-hidden="true"
       focusable="false"
     >
-      <path d={paths[suit]} fill="currentColor" />
+      <path d={suitPaths[suit]} fill="currentColor" />
     </svg>
   );
 }

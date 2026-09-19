@@ -1,3 +1,4 @@
+import { tableSeats } from "./flowScene";
 import type { Skill } from "./content";
 import type { Task } from "./tasks";
 import { validate } from "./poker";
@@ -68,6 +69,53 @@ function validTask(t: Task): boolean {
   } catch {
     return false;
   }
+  if (t.scene !== undefined) {
+    const scene = t.scene;
+    if (
+      !scene ||
+      typeof scene.street !== "string" ||
+      !tableSeats.includes(scene.hero) ||
+      !Array.isArray(scene.cards) ||
+      scene.cards.length !== 2 ||
+      !Array.isArray(scene.board) ||
+      ![0, 3, 4, 5].includes(scene.board.length) ||
+      !Array.isArray(scene.folded) ||
+      !scene.folded.every((s) => tableSeats.includes(s)) ||
+      !scene.bets ||
+      typeof scene.bets !== "object" ||
+      Array.isArray(scene.bets) ||
+      !Object.entries(scene.bets).every(
+        ([seat, amount]) =>
+          tableSeats.includes(seat) && Number.isFinite(amount) && amount >= 0,
+      ) ||
+      !Number.isFinite(scene.previousPot) ||
+      scene.previousPot < 0 ||
+      (scene.opponent !== undefined &&
+        (!scene.opponent ||
+          !tableSeats.includes(scene.opponent.seat) ||
+          !Array.isArray(scene.opponent.cards) ||
+          scene.opponent.cards.length !== 2))
+    )
+      return false;
+    try {
+      validate([
+        ...scene.cards,
+        ...scene.board,
+        ...(scene.opponent?.cards ?? []),
+      ]);
+    } catch {
+      return false;
+    }
+  }
+  if (
+    t.stacks !== undefined &&
+    (!t.stacks ||
+      typeof t.stacks.unit !== "string" ||
+      ![t.stacks.hero, t.stacks.opponent, t.stacks.pot ?? 0].every(
+        (n) => Number.isFinite(n) && n >= 0,
+      ))
+  )
+    return false;
   for (const solution of [t.solution, t.opponentSolution]) {
     if (solution !== undefined) {
       if (!Array.isArray(solution) || solution.length !== 5) return false;

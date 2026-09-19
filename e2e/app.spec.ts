@@ -353,7 +353,7 @@ test("урок 0: понятные подписи, крупный Иваныч �
   ).toBeVisible();
   await expect(page.getByText("Это рубашка", { exact: false })).toHaveCount(0);
   expect(
-    await page.locator(".card-center i").evaluateAll((els) =>
+    await page.locator(".card-pip").evaluateAll((els) =>
       els.every((e) => {
         const r = e.getBoundingClientRect();
         return r.width > 3 && r.height > 3;
@@ -424,6 +424,7 @@ test("следующий урок: комбинации с примерами и
   await expect(page.locator(".key-card")).toHaveCount(5);
   await page.screenshot({ path: "test-results/combination-two-trips.png" });
   await page.getByRole("button", { name: "Глава 3: Кикеры и делёж" }).click();
+  await page.getByRole("button", { name: "Далее", exact: true }).click();
   await page.getByRole("button", { name: "Далее", exact: true }).click();
   await page.getByRole("button", { name: "Далее", exact: true }).click();
   await page.getByRole("button", { name: "Далее", exact: true }).click();

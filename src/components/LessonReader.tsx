@@ -1,3 +1,4 @@
+import { StackExample } from "./StackExample";
 import { PokerTable } from "./PokerTable";
 import { StreetCards } from "./StreetCards";
 import { rankingExamples } from "../rankingExamples";
@@ -146,6 +147,7 @@ export function LessonReader({
           (lesson.id === "cards" && step === 4 ? "rank-ladder" : "")
         }
       >
+        {slide.stacks && <StackExample {...slide.stacks} />}
         {slide.tablePosition && <PokerTable position={slide.tablePosition} />}
         {slide.street !== undefined && <StreetCards count={slide.street} />}
         {slide.cards && <Cards cards={slide.cards} />}

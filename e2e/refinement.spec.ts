@@ -35,8 +35,9 @@ test("главы, пример Иваныча и десять комбинаци
     await expect(page.locator(".sava-wide")).toContainText("Побеждает игрок 1");
     await page.locator(".sava-wide").scrollIntoViewIfNeeded();
     await noOverflow(page);
+    await expect(page.locator(".sava-wide .card-face image")).toHaveCount(1);
     expect(
-      await page.locator(".sava-wide .court-art").evaluateAll((els) =>
+      await page.locator(".sava-wide .card-face image").evaluateAll((els) =>
         els.every((e) => {
           const r = e.getBoundingClientRect(),
             c = e.closest(".card")!.getBoundingClientRect();
@@ -49,7 +50,7 @@ test("главы, пример Иваныча и десять комбинаци
     await expect(
       page.locator('.chapter button[aria-current="step"]'),
     ).toHaveText("3");
-    for (let i = 0; i < 3; i++)
+    for (let i = 0; i < 4; i++)
       await page.getByRole("button", { name: "Далее", exact: true }).click();
     await expect(page.locator(".ranking-list li")).toHaveCount(10);
     await expect(page.locator(".ranking-list .card")).toHaveCount(50);
@@ -105,7 +106,7 @@ test("пять общих и две личные карты выбираются
   await page.getByRole("button", { name: /03 Лучшая пятёрка/ }).click();
   await expect(page.locator(".board .select-cards button")).toHaveCount(5);
   await expect(page.locator(".hand .select-cards button")).toHaveCount(2);
-  for (let i = 0; i < 3; i++)
+  for (let i = 0; i < 4; i++)
     await page.locator(".board .select-cards button").nth(i).click();
   for (let i = 0; i < 2; i++)
     await page.locator(".hand .select-cards button").nth(i).click();
