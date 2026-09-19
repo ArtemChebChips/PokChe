@@ -4,6 +4,12 @@ import { skillNames } from "./content";
 import type { Task } from "./tasks";
 export const handCases = [
   {
+    id: "royal",
+    cards: "Ts Js Qs Ks As 4h 2d",
+    category: 8,
+    why: "Пять старших карт одной масти — флеш-рояль.",
+  },
+  {
     id: "high",
     cards: "As Kd 9h 7c 4s 3d 2c",
     category: 0,
@@ -85,49 +91,86 @@ export const handCases = [
 export const winnerCases = [
   {
     id: "board-tie",
-    hero: "9s 3h",
-    villain: "7c 2d",
-    board: "Ks Kh 8c 8d As",
-    why: "У обоих играет доска: две пары и туз-кикер. Личные девятка и семёрка не становятся шестыми кикерами.",
+    hero: "8s 3h",
+    villain: "6c 2d",
+    board: "Qs Qh 7c 7d Ks",
+    why: "У обоих играет доска: две пары и общий кикер. Личные карты не улучшают эти пять карт.",
   },
   {
     id: "royal-board",
     hero: "2c 2h",
     villain: "9d 8d",
     board: "As Ks Qs Js Ts",
-    why: "Роял-флеш на общей доске — максимальная пятёрка для обоих. Личная пара не даёт преимущества.",
+    why: "Флеш-рояль на общей доске — максимальная пятёрка для обоих. Личная пара не даёт преимущества.",
   },
   {
     id: "kicker",
-    hero: "As Kc",
-    villain: "Ad Qc",
-    board: "Ah 9d 7s 4c 2h",
-    why: "Пары тузов равны. Первый отличающийся кикер — король против дамы; король старше.",
+    hero: "Qs Jc",
+    villain: "Qd Tc",
+    board: "Qh 8d 6s 4c 2h",
+    why: "Пары равны. Кикеры сравниваем от старшего к младшему: решает первая различающаяся карта.",
   },
   {
     id: "two-pair-kicker",
-    hero: "As 3h",
-    villain: "Qc 2d",
-    board: "Ks Kh 8c 8d 4s",
-    why: "У обоих две пары королей и восьмёрок. Решает пятая карта: туз против дамы.",
+    hero: "Ks 3h",
+    villain: "Tc 2d",
+    board: "Js Jh 6c 6d 4s",
+    why: "Две пары одинаковы. Побеждает рука со старшим кикером — пятой картой.",
   },
   {
     id: "full-house-order",
     hero: "Ks Kh",
     villain: "Qs Qh",
     board: "Kd Qd 9c 9h 2s",
-    why: "Фулл-хаусы сначала сравниваются по тройке: короли старше дам. Пара девяток у обоих.",
+    why: "Фулл-хаусы сначала сравниваются по трём одинаковым картам. Побеждает рука, у которой они старше.",
   },
   {
     id: "flush-over-straight",
     hero: "Ah 2h",
     villain: "9c Ts",
     board: "5h 6h 7h 8d Kc",
-    why: "У одной руки пять червей, у другой стрит до десятки. Флеш старше стрита.",
+    why: "У одной руки пять карт одной масти, у другой — стрит. Флеш старше стрита.",
   },
 ];
 function remap(cards: string[], map: string[]) {
   return cards.map((c) => c[0] + map[suits.indexOf(c[1])]);
+}
+// Меняем достоинства с сохранением учебного смысла; проверяем категории и исход.
+function variedRanks(cards: string[], counts: number[]) {
+  const ranks = "23456789TJQKA";
+  const used = [...new Set(cards.map((c) => c[0]))].sort(
+    (a, b) => ranks.indexOf(a) - ranks.indexOf(b),
+  );
+  const hands = (all: string[]) => [
+    evaluate([...all.slice(0, counts[0]), ...all.slice(counts[0] + counts[1])]),
+    evaluate([
+      ...all.slice(counts[0], counts[0] + counts[1]),
+      ...all.slice(counts[0] + counts[1]),
+    ]),
+  ];
+  const original = hands(cards);
+  for (let attempt = 0; attempt < 40; attempt++) {
+    const next = shuffle([...ranks])
+      .slice(0, used.length)
+      .sort((a, b) => ranks.indexOf(a) - ranks.indexOf(b));
+    const mapped = cards.map((c) => next[used.indexOf(c[0])] + c[1]);
+    const result = hands(mapped);
+    if (
+      mapped
+        .slice(4)
+        .map((c) => c[0])
+        .sort()
+        .join("") === "88AKK"
+    )
+      continue;
+    if (
+      result.every((h, i) => h.score[0] === original[i].score[0]) &&
+      compare(result[0].score, result[1].score) ===
+        compare(original[0].score, original[1].score)
+    )
+      return mapped;
+  }
+  return cards;
 }
 export type CombinationSkill = "combination" | "best" | "winner";
 export function combinationTask(
@@ -144,30 +187,41 @@ export function combinationTask(
     explanation: "",
     hint: "",
     category: "exact",
-    revision: 2,
+    revision: 3,
   };
   if (skill === "combination" || skill === "best") {
     const scenario = handCases.find((c) => c.id === family) ?? pick(handCases),
       map = shuffle([...suits]);
     t.scenario = scenario.id;
-    t.cards = shuffle(remap(scenario.cards.split(" "), map));
-    const result = evaluate(t.cards);
+    const dealt = shuffle(remap(scenario.cards.split(" "), map));
+    t.board = dealt.slice(0, 5);
+    t.cards = dealt.slice(5);
+    const result = evaluate(dealt);
+    const displayName =
+      result.score[0] === 3
+        ? t.cards[0][0] === t.cards[1][0] &&
+          result.best.filter((c) => c[0] === t.cards![0][0]).length === 3
+          ? "Сет"
+          : "Тройка"
+        : result.score[0] === 8 && result.score[1] === 14
+          ? "Флеш-рояль"
+          : result.name;
     if (result.score[0] !== scenario.category)
       throw Error("Invalid teaching case");
-    t.answer = result.name;
+    t.answer = displayName;
     t.choices = shuffle([
-      result.name,
-      ...shuffle(names.filter((n) => n !== result.name)).slice(0, 3),
+      displayName,
+      ...shuffle(names.filter((n) => n !== result.name)).slice(0, 4),
     ]);
     t.selection = skill === "best";
     t.prompt = t.selection
-      ? "Выберите лучшую пятёрку из семи карт."
+      ? "Выберите пять карт, которые дают самую сильную комбинацию."
       : "Какая лучшая комбинация в этих семи картах?";
     t.hint =
-      "Выберите ровно пять карт. Стрит: пять подряд. Флеш: пять одной масти.";
+      "Проверьте каждый вариант ответа: найдутся ли нужные для него пять карт среди общих и личных? Если подходят несколько комбинаций, выбирайте старшую. Не обязательно использовать обе личные карты.";
     t.explanation =
       "Лучшая комбинация: " +
-      result.name.toLowerCase() +
+      displayName.toLowerCase() +
       ". " +
       scenario.why.replace("червей", "карт одной масти");
     t.solution = result.best;
@@ -175,12 +229,21 @@ export function combinationTask(
     const scenario =
         winnerCases.find((c) => c.id === family) ?? pick(winnerCases),
       map = shuffle([...suits]);
-    let hero = remap(scenario.hero.split(" "), map),
-      villain = remap(scenario.villain.split(" "), map);
+    const source = [
+      ...scenario.hero.split(" "),
+      ...scenario.villain.split(" "),
+      ...scenario.board.split(" "),
+    ];
+    const dealt = remap(
+      scenario.id === "royal-board" ? source : variedRanks(source, [2, 2]),
+      map,
+    );
+    let hero = dealt.slice(0, 2),
+      villain = dealt.slice(2, 4);
     if (Math.random() < 0.5) [hero, villain] = [villain, hero];
     t.cards = hero;
     t.opponent = villain;
-    t.board = remap(scenario.board.split(" "), map);
+    t.board = dealt.slice(4);
     t.scenario = scenario.id;
     validate([...hero, ...villain, ...t.board]);
     const a = evaluate([...hero, ...t.board]),
@@ -210,7 +273,7 @@ export function combinationSession(skill: CombinationSkill): Task[] {
       "wheel",
       "flush",
       pick(["two-trips", "full-house"]),
-      pick(["quads", "straight-flush"]),
+      pick(["quads", "straight-flush", "royal"]),
       pick(["high", "pair", "two-pairs", "trips", "no-wrap"]),
     ]).map((id) => combinationTask(skill, id));
   if (skill === "best")
@@ -219,7 +282,7 @@ export function combinationSession(skill: CombinationSkill): Task[] {
       "three-pairs",
       "wheel",
       "flush",
-      pick(["quads", "straight-flush", "pair"]),
+      pick(["quads", "straight-flush", "royal", "pair"]),
     ]).map((id) => combinationTask(skill, id));
   return shuffle([
     pick(["board-tie", "royal-board"]),

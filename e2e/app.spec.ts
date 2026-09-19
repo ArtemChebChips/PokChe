@@ -346,7 +346,7 @@ test("урок 0: понятные подписи, крупный Иваныч �
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto(process.env.E2E_PATH || "/");
   await page.getByRole("button", { name: "Начать урок", exact: true }).click();
-  await expect(page.getByText("Трефы (крести)", { exact: true })).toBeVisible();
+  await expect(page.getByText("Трефы", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Далее", exact: true }).click();
   await expect(
     page.getByRole("heading", { name: "Карты по старшинству" }),
@@ -415,7 +415,7 @@ test("следующий урок: комбинации с примерами и
   ).toBeVisible();
   await page.getByRole("button", { name: "Далее", exact: true }).click();
   await expect(page.locator(".teaching-hand .card")).toHaveCount(5);
-  await page.getByLabel("Раздел урока").selectOption("Лучшая пятёрка");
+  await page.getByRole("button", { name: "Глава 2: Лучшая пятёрка" }).click();
   await expect(
     page.getByRole("heading", { name: "Туз в младшем стрите" }),
   ).toBeVisible();
@@ -423,7 +423,8 @@ test("следующий урок: комбинации с примерами и
   await page.getByRole("button", { name: "Далее", exact: true }).click();
   await expect(page.locator(".key-card")).toHaveCount(5);
   await page.screenshot({ path: "test-results/combination-two-trips.png" });
-  await page.getByLabel("Раздел урока").selectOption("Кикеры и делёж");
+  await page.getByRole("button", { name: "Глава 3: Кикеры и делёж" }).click();
+  await page.getByRole("button", { name: "Далее", exact: true }).click();
   await page.getByRole("button", { name: "Далее", exact: true }).click();
   await page.getByRole("button", { name: "Далее", exact: true }).click();
   await page.getByRole("button", { name: "Завершить чтение" }).click();

@@ -5,13 +5,15 @@ export function Ivanych({
   pose,
   children,
   advice = false,
+  wide = false,
 }: {
   pose: IvanychPose;
   children: ReactNode;
   advice?: boolean;
+  wide?: boolean;
 }) {
   return (
-    <aside className="sava-panel">
+    <aside className={"sava-panel" + (wide ? " sava-wide" : "")}>
       <img
         src={import.meta.env.BASE_URL + "sava/sava-" + pose + ".png"}
         width="320"

@@ -1,3 +1,4 @@
+import { handFlowTask, handFlowSession } from "./handFlowTasks";
 import { combinationTask, combinationSession } from "./combinationTasks";
 import { shuffle, pick } from "./random";
 export { shuffle } from "./random";
@@ -11,8 +12,6 @@ import {
   spr,
   handLabel,
   equity,
-  preflopOrder,
-  postflopOrder,
 } from "./poker";
 import { type Skill, skillNames } from "./content";
 export type CardKind = "figures" | "ace" | "equal" | "numbers";
@@ -45,6 +44,7 @@ export function generate(skill: Skill): Task {
     return cardTask(pick(["figures", "figures", "figures", "ace", "equal"]));
   if (skill === "combination" || skill === "best" || skill === "winner")
     return combinationTask(skill);
+  if (skill === "order") return handFlowTask();
   const t: Task = {
     id: crypto.randomUUID(),
     skill,
@@ -63,17 +63,7 @@ export function generate(skill: Skill): Task {
       ...shuffle([...new Set(others)].filter((x) => x !== answer)).slice(0, 3),
     ]);
   };
-  if (skill === "order") {
-    const pre = Math.random() < 0.5;
-    const order = pre ? preflopOrder : postflopOrder;
-    const index = Math.floor(Math.random() * 5);
-    t.prompt = `6-max, все игроки в раздаче. ${pre ? "Префлоп" : "Флоп"}: кто действует сразу после ${order[index]} в первом круге?`;
-    options(order[index + 1], order);
-    t.hint = pre
-      ? "На префлопе начинают слева от BB."
-      : "После флопа начинают слева от BTN.";
-    t.explanation = `Очередь: ${order.join(" → ")}. Выбывших игроков пропускают.`;
-  } else if (skill === "stack" || skill === "spr") {
+  if (skill === "stack" || skill === "spr") {
     const a = pick([20, 30, 40, 60, 80, 100]),
       b = pick([25, 40, 50, 75, 100, 120]),
       pot = pick([5, 10, 20]);
@@ -184,13 +174,14 @@ export function check(
   selected: string[] = [],
 ): boolean {
   if (task.selection) {
+    const available = [...(task.cards ?? []), ...(task.board ?? [])];
     if (
       selected.length !== 5 ||
-      selected.some((c) => !task.cards?.includes(c)) ||
+      selected.some((c) => !available.includes(c)) ||
       new Set(selected).size !== 5
     )
       return false;
-    return compare(evaluate(selected).score, evaluate(task.cards!).score) === 0;
+    return compare(evaluate(selected).score, evaluate(available).score) === 0;
   }
   return task.answer === answer;
 }
@@ -245,6 +236,8 @@ export function cardTask(kind: CardKind, pair?: string[]): Task {
 export function generateSession(skills: Skill[], count: number): Task[] {
   if (!skills.length || !Number.isInteger(count) || count < 1 || count > 20)
     throw Error("Invalid session");
+  if (skills.length === 1 && skills[0] === "order" && count === 5)
+    return handFlowSession();
   if (skills.length === 1 && skills[0] === "cards" && count === 5)
     return shuffle([
       ...shuffle([
@@ -279,6 +272,7 @@ export function generateSession(skills: Skill[], count: number): Task[] {
   );
 }
 export function generateSimilar(task: Task): Task {
+  if (task.skill === "order") return handFlowTask(task.scenario);
   if (
     task.skill === "combination" ||
     task.skill === "best" ||

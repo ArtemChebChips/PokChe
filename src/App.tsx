@@ -606,28 +606,57 @@ export default function App() {
                     <Cards cards={task.opponent} />
                   </div>
                 )}
-                {task.board && (
+                {(task.board ||
+                  (task.cards?.length === 7 && !task.opponent)) && (
                   <div className="board">
                     <span>Общие карты</span>
-                    <Cards cards={task.board} />
+                    <div
+                      className={
+                        "cards board-cards " +
+                        (task.selection ? "select-cards" : "")
+                      }
+                    >
+                      {(task.board ?? task.cards!.slice(0, 5)).map((c) => (
+                        <Card
+                          key={c}
+                          card={c}
+                          active={selected.includes(c)}
+                          onClick={
+                            task.selection && graded === null
+                              ? () =>
+                                  setSelected((p) =>
+                                    p.includes(c)
+                                      ? p.filter((x) => x !== c)
+                                      : p.length < 5
+                                        ? [...p, c]
+                                        : p,
+                                  )
+                              : undefined
+                          }
+                        />
+                      ))}
+                    </div>
                   </div>
                 )}
                 {task.cards && (
                   <div className="hand">
                     <span>
-                      {task.opponent || task.board
-                        ? "Ваша рука"
-                        : task.selection
-                          ? "Нажмите на пять карт"
-                          : "Карты"}
+                      {task.board || task.opponent || task.cards.length === 7
+                        ? "Ваши личные карты"
+                        : "Карты"}
                     </span>
                     <div
-                      className={`cards ${task.selection ? "select-cards" : ""}`}
+                      className={
+                        "cards " + (task.selection ? "select-cards" : "")
+                      }
                     >
-                      {task.cards.map((c) => (
+                      {(task.cards.length === 7 && !task.board && !task.opponent
+                        ? task.cards.slice(5)
+                        : task.cards
+                      ).map((c) => (
                         <Card
-                          card={c}
                           key={c}
+                          card={c}
                           active={selected.includes(c)}
                           onClick={
                             task.selection && graded === null
@@ -721,8 +750,8 @@ export default function App() {
                     <HandExample
                       label={
                         task.opponent
-                          ? "Ваша лучшая пятёрка"
-                          : "Одна из лучших пятёрок"
+                          ? "Ваша комбинация из пяти карт"
+                          : "Лучшая комбинация из пяти карт"
                       }
                       cards={task.solution}
                     />

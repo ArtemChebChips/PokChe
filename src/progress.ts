@@ -78,7 +78,11 @@ function validTask(t: Task): boolean {
       }
     }
   }
-  if (t.selection && (t.skill !== "best" || t.cards?.length !== 7))
+  if (
+    t.selection &&
+    (t.skill !== "best" ||
+      (t.cards?.length ?? 0) + (t.board?.length ?? 0) !== 7)
+  )
     return false;
   return true;
 }

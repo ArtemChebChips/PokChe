@@ -29,7 +29,9 @@ it("каждый целевой случай проверяется незави
   for (const c of handCases)
     for (let i = 0; i < 12; i++) {
       const t = combinationTask("best", c.id);
-      expect(solver.Hand.solve(t.cards!).rank - 1).toBe(c.category);
+      expect(solver.Hand.solve([...t.cards!, ...t.board!]).rank - 1).toBe(
+        c.category,
+      );
       expect(check(t, "", t.solution)).toBe(true);
       expect(generateSimilar(t).scenario).toBe(c.id);
     }
