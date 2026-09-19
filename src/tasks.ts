@@ -264,8 +264,9 @@ export function cardTask(kind: CardKind, pair?: string[]): Task {
     hint: "Валет J → дама Q → король K → туз A. Масти равны.",
     explanation:
       diff === 0
-        ? "Достоинства одинаковые. Масти не дают преимущества: карты равны."
-        : (rankNames[higher] ?? higher) +
+        ? "Достоинства одинаковые. В таком сравнении масть не даёт преимущества: карты равны."
+        : (rankNames[higher] ?? higher).charAt(0).toUpperCase() +
+          (rankNames[higher] ?? higher).slice(1) +
           " старше, чем " +
           (rankNames[lower] ?? lower) +
           ". Порядок: 2–3–4–5–6–7–8–9–10–J–Q–K–A.",

@@ -1,3 +1,4 @@
+import { CorrectBurst } from "./components/CorrectBurst";
 import { useEffect, useRef, useState } from "react";
 import {
   ArrowRight,
@@ -154,7 +155,7 @@ export default function App() {
     setError("");
     resetAnswer();
     if (review) {
-      const tasks = progress.mistakes.slice(0, 5);
+      const tasks = progress.mistakes;
       if (!tasks.length) return;
       setSession({ tasks, index: 0, results: [], review: true });
       setScreen("session");
@@ -222,12 +223,47 @@ export default function App() {
     setSession({ ...session, results: [...session.results, correct] });
   }
   function next() {
-    if (!session) return;
-    if (session.index === session.tasks.length - 1) setScreen("summary");
-    else {
+    if (!session || loading) return;
+    if (session.index < session.tasks.length - 1) {
       setSession({ ...session, index: session.index + 1 });
       resetAnswer();
+      return;
     }
+    if (session.review) {
+      setScreen("summary");
+      return;
+    }
+    setLoading(true);
+    setError("");
+    const w = new Worker(new URL("./training.worker.ts", import.meta.url), {
+      type: "module",
+    });
+    worker.current = w;
+    w.onmessage = (e: MessageEvent<{ tasks?: Task[]; error?: string }>) => {
+      setLoading(false);
+      w.terminate();
+      if (!e.data.tasks?.length) {
+        setError(
+          "Не удалось подготовить следующую задачу. Попробуйте ещё раз.",
+        );
+        return;
+      }
+      setSession({
+        ...session,
+        tasks: [...session.tasks, ...e.data.tasks],
+        index: session.index + 1,
+      });
+      resetAnswer();
+    };
+    w.onerror = () => {
+      setLoading(false);
+      w.terminate();
+      setError("Не удалось загрузить следующую задачу.");
+    };
+    w.postMessage({
+      skills: [...new Set(session.tasks.map((t) => t.skill))],
+      count: 5,
+    });
   }
   function finishLesson() {
     setProgress((p) => ({
@@ -334,7 +370,9 @@ export default function App() {
         {screen === "main" && tab === "train" && (
           <>
             <h1>Тренажёры</h1>
-            <p className="lead">Пять задач на выбранный навык.</p>
+            <p className="lead">
+              Выбери навык. Решай по одной задаче и заканчивай, когда захочешь.
+            </p>
             <button
               className="feature-action"
               onClick={() => start()}
@@ -345,7 +383,7 @@ export default function App() {
               </span>
               <span>
                 <strong>Смешанная тренировка</strong>
-                <small>5 задач · разные навыки</small>
+                <small>Разные навыки · в своём темпе</small>
               </span>
               <ArrowRight />
             </button>
@@ -382,7 +420,7 @@ export default function App() {
                         ? "Конкретная рука · полный перебор"
                         : s === "spr"
                           ? "Оставшийся стек ÷ банк"
-                          : "Точный ответ · 5 новых задач"}
+                          : "Точный ответ · без лимита задач"}
                     </small>
                   </span>
                   <ChevronRight size={18} />
@@ -417,7 +455,7 @@ export default function App() {
         {screen === "main" && tab === "progress" && (
           <>
             <h1>Мой прогресс</h1>
-            <p className="lead">Прочитанные уроки и результаты практики.</p>
+            <p className="lead">Пройденные уроки и результаты практики.</p>
             <div className="stats">
               <div>
                 <strong>{solved}</strong>
@@ -529,21 +567,13 @@ export default function App() {
               >
                 <X size={21} />
               </button>
-              <span>
-                {session.review ? "Повторение ошибок" : "Короткая практика"}
-              </span>
-              <strong>
-                {session.index + 1}
-                <span> / {session.tasks.length}</span>
-              </strong>
+              <span>{session.review ? "Повторение ошибок" : "Практика"}</span>
+              <strong>Задание {session.index + 1}</strong>
             </div>
-            <Bar
-              value={
-                ((session.index + (graded !== null ? 1 : 0)) /
-                  session.tasks.length) *
-                100
-              }
-            />
+            <p className="practice-count">
+              Решено: {session.results.length} · Верно:{" "}
+              {session.results.filter(Boolean).length}
+            </p>
             <div className="task-type">
               <ShieldCheck size={14} />{" "}
               {task.skill === "equity"
@@ -675,9 +705,11 @@ export default function App() {
                       ? "Верно. Так держать!"
                       : "Ошибка — повод разобраться"}
                   </strong>
-                  <Sava pose={graded ? "explain" : "try-again"}>
-                    <p>{task.explanation}</p>
-                  </Sava>
+                  {graded && <CorrectBurst key={task.id} />}
+                  <p>
+                    {task.explanation.charAt(0).toUpperCase() +
+                      task.explanation.slice(1)}
+                  </p>
                   {task.details && (
                     <details>
                       <summary>Подробнее о проверке</summary>
@@ -697,11 +729,18 @@ export default function App() {
                     </>
                   )}
                 </div>
-                <button className="primary" onClick={next}>
-                  {session.index === session.tasks.length - 1
-                    ? "Завершить тренировку"
+                <button className="primary" onClick={next} disabled={loading}>
+                  {session.review && session.index === session.tasks.length - 1
+                    ? "Закончить повторение"
                     : "Следующая задача"}
                   <ArrowRight size={18} />
+                </button>
+                <button
+                  className="secondary"
+                  disabled={loading}
+                  onClick={() => setScreen("summary")}
+                >
+                  Закончить тренировку
                 </button>
               </>
             )}
@@ -709,17 +748,14 @@ export default function App() {
         )}
         {screen === "summary" && session && (
           <section className="summary">
-            <Sava pose="celebrate">
-              <p>Готово! Можно закрепить навык или закончить на сегодня.</p>
-            </Sava>
             <h1>Практика завершена</h1>
             <div className="big-result">
               {session.results.filter(Boolean).length}
-              <span> / {session.tasks.length}</span>
+              <span> / {session.results.length}</span>
             </div>
             <p>верных ответов</p>
             <div className="result-dots">
-              {session.results.map((r, i) => (
+              {session.results.slice(-30).map((r, i) => (
                 <span className={r ? "ok" : "miss"} key={i}>
                   {r ? <Check size={18} /> : <RotateCcw size={16} />}
                 </span>
@@ -737,7 +773,7 @@ export default function App() {
               }
               disabled={loading}
             >
-              Ещё пять новых задач
+              Продолжить практику
               <ArrowRight size={18} />
             </button>
             {progress.mistakes.length > 0 && (

@@ -1,8 +1,9 @@
+import { Suit } from "./Suit";
 import { ArrowLeft, ArrowRight, CheckCircle2, RotateCcw } from "lucide-react";
 import { useState } from "react";
 import type { Lesson } from "../content";
 import type { Progress } from "../progress";
-import { Cards, CardBack } from "./PlayingCard";
+import { Cards } from "./PlayingCard";
 import { Sava } from "./Sava";
 
 export function LessonReader({
@@ -33,15 +34,14 @@ export function LessonReader({
     return (
       <div className="lesson-complete">
         <CheckCircle2 size={36} />
-        <h1>Урок прочитан</h1>
+        <h1>Урок пройден</h1>
         <p>{lesson.title}</p>
-        <Sava pose="celebrate">
-          <p>
-            {lesson.skills.length
-              ? "Теперь попробуем на практике. Пять задач — и посмотрим, что запомнилось."
-              : "Готово! К этому уроку всегда можно вернуться."}
-          </p>
-        </Sava>
+        <p>
+          {lesson.skills.length
+            ? "Переходи к практике: можно решить одну задачу или продолжать дальше."
+            : "К этому уроку всегда можно вернуться."}
+        </p>
+
         {lesson.skills.length > 0 && (
           <button className="primary" onClick={onTrain} disabled={loading}>
             Тренироваться
@@ -85,18 +85,25 @@ export function LessonReader({
       </span>
       <h1>{slide.title}</h1>
       <p className="lesson-text">{slide.text}</p>
-      <div className="example">
+      <div
+        className={
+          "example " +
+          (lesson.id === "cards" && step === 4 ? "rank-ladder" : "")
+        }
+      >
         {slide.cards && <Cards cards={slide.cards} />}
         {lesson.id === "cards" && step === 0 && (
           <div className="suit-guide">
             {[
-              ["♠", "Пики"],
-              ["♥", "Червы"],
-              ["♦", "Бубны"],
-              ["♣", "Трефы"],
+              ["s", "Пики"],
+              ["h", "Червы"],
+              ["d", "Бубны"],
+              ["c", "Трефы (крести)"],
             ].map(([s, n], i) => (
               <div key={s}>
-                <strong className={i === 1 || i === 2 ? "red" : ""}>{s}</strong>
+                <strong className={i === 1 || i === 2 ? "red" : ""}>
+                  <Suit suit={s} />
+                </strong>
                 <span>{n}</span>
               </div>
             ))}
@@ -110,21 +117,12 @@ export function LessonReader({
           </div>
         )}
         <p>{slide.example}</p>
-        {lesson.id === "cards" && step === 1 && (
-          <div className="card-back-example">
-            <CardBack />
-            <p>
-              Это рубашка — оборот карты. Пока карта закрыта, её достоинство и
-              масть не видны.
-            </p>
-          </div>
-        )}
       </div>
       {lesson.id === "cards" && step === 2 && (
         <Sava pose="explain">
           <p>
-            Сначала валет, потом дама, затем король. Здесь запоминаем буквы: J →
-            Q → K.
+            Совет: запомни тройку J → Q → K. Именно эти буквы чаще путают в
+            начале.
           </p>
         </Sava>
       )}

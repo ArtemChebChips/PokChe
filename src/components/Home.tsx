@@ -72,7 +72,7 @@ export function Home({
     <>
       <div className="home-intro">
         <h1>Учимся играть</h1>
-        <span>{finished} из 13 модулей прочитано</span>
+        <span>{finished} из 13 модулей пройдено</span>
         <div className="bar">
           <span style={{ width: (finished / 13) * 100 + "%" }} />
         </div>

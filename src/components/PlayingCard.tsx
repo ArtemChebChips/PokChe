@@ -1,3 +1,4 @@
+import { Suit } from "./Suit";
 export const symbols: Record<string, string> = {
   s: "♠",
   h: "♥",
@@ -8,7 +9,7 @@ const suits: Record<string, string> = {
   s: "пики",
   h: "червы",
   d: "бубны",
-  c: "трефы",
+  c: "трефы (крести)",
 };
 const ranks: Record<string, string> = {
   A: "Туз",
@@ -102,13 +103,14 @@ export function Card({
   active?: boolean;
   onClick?: () => void;
 }) {
-  const rank = card[0] === "T" ? "10" : card[0],
-    suit = symbols[card[1]];
+  const rank = card[0] === "T" ? "10" : card[0];
   const content = (
     <>
       <span className="card-index top">
         <b>{rank}</b>
-        <i>{suit}</i>
+        <i>
+          <Suit suit={card[1]} />
+        </i>
       </span>
       <span
         className={"card-center " + (positions[card[0]] ? "" : "court-art")}
@@ -120,13 +122,13 @@ export function Card({
               key={i}
               className={card[0] === "A" ? "ace-pip" : ""}
               style={{
-                left: x + "%",
+                left: (x === 32 ? 24 : x === 68 ? 76 : x) + "%",
                 top: y + "%",
                 transform:
                   "translate(-50%,-50%)" + (y > 50 ? " rotate(180deg)" : ""),
               }}
             >
-              {suit}
+              <Suit suit={card[1]} />
             </i>
           ))
         ) : (
@@ -146,7 +148,9 @@ export function Card({
       </span>
       <span className="card-index bottom" aria-hidden="true">
         <b>{rank}</b>
-        <i>{suit}</i>
+        <i>
+          <Suit suit={card[1]} />
+        </i>
       </span>
     </>
   );

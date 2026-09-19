@@ -48,7 +48,7 @@ test("урок → задачи → разбор → перезагрузка �
       });
     await page
       .getByRole("button", {
-        name: i === 4 ? "Завершить тренировку" : "Следующая задача",
+        name: i === 4 ? "Закончить тренировку" : "Следующая задача",
       })
       .click();
   }
@@ -76,7 +76,7 @@ test("урок → задачи → разбор → перезагрузка �
     .click();
   await page.getByRole("button", { name: "Проверить ответ" }).click();
   await expect(page.getByRole("status")).toContainText("Верно");
-  await page.getByRole("button", { name: "Завершить тренировку" }).click();
+  await page.getByRole("button", { name: "Закончить тренировку" }).click();
   expect(
     await page.evaluate(
       () =>
@@ -101,8 +101,18 @@ test("урок → задачи → разбор → перезагрузка �
   await page.locator(".choices button").first().click();
   await page.getByRole("button", { name: "Проверить ответ" }).click();
   await expect(page.getByRole("status")).toContainText("Точное эквити");
-  expect(await page.locator('.sava-panel img').evaluateAll(els=>els.every(e=>(e as HTMLImageElement).complete&&(e as HTMLImageElement).naturalWidth>0))).toBe(true);
- expect(errors).toEqual([]);
+  expect(
+    await page
+      .locator(".sava-panel img")
+      .evaluateAll((els) =>
+        els.every(
+          (e) =>
+            (e as HTMLImageElement).complete &&
+            (e as HTMLImageElement).naturalWidth > 0,
+        ),
+      ),
+  ).toBe(true);
+  expect(errors).toEqual([]);
 });
 
 test("матрица доступна через крупный селектор, узкий экран без горизонтальной прокрутки", async ({
@@ -168,13 +178,11 @@ test("повреждённое сохранение не перезаписыв�
     format: "tournament",
     days: [],
   };
-  await page
-    .locator("input[type=file]")
-    .setInputFiles({
-      name: "backup.json",
-      mimeType: "application/json",
-      buffer: Buffer.from(JSON.stringify(restored)),
-    });
+  await page.locator("input[type=file]").setInputFiles({
+    name: "backup.json",
+    mimeType: "application/json",
+    buffer: Buffer.from(JSON.stringify(restored)),
+  });
   await expect(page.getByRole("status")).toContainText(
     "Резервная копия восстановлена",
   );
@@ -208,7 +216,7 @@ test("закладка чтения и прокрутка списка сохр�
     .getByRole("button", { name: "Продолжить урок", exact: true })
     .click();
   await expect(
-    page.getByRole("heading", { name: "Что написано в уголке" }),
+    page.getByRole("heading", { name: "Карты по старшинству" }),
   ).toBeVisible();
   expect(
     await page.evaluate(
@@ -246,7 +254,7 @@ test("похожая задача продолжает текущую трени
     .click();
   await page.getByRole("button", { name: "Проверить ответ" }).click();
   await page.getByRole("button", { name: "Решить похожую задачу" }).click();
-  await expect(page.locator(".session-heading")).toContainText("2 / 6");
+  await expect(page.locator(".session-heading")).toContainText("Задание 2");
   const next = await page
     .locator(".table .card")
     .evaluateAll((els) =>
@@ -261,15 +269,125 @@ test("похожая задача продолжает текущую трени
   ).toBe(1);
 });
 
-test('новая главная: рисунки загружены, список доступен на коротком экране',async({page})=>{
- for(const viewport of [{width:390,height:844},{width:320,height:568}]){
- await page.setViewportSize(viewport);
- await page.goto(process.env.E2E_PATH||'/');
- await expect(page.getByRole('heading',{name:'Учимся играть'})).toBeVisible();
- await page.waitForFunction(()=>Array.from(document.images).every(i=>i.complete&&i.naturalWidth>0));
- const list=await page.locator('.lesson-scroll').boundingBox();
- expect(list!.height).toBeGreaterThan(140);
- expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
- await page.screenshot({path:'test-results/home-'+viewport.width+'.png'});
- }
+test("новая главная: рисунки загружены, список доступен на коротком экране", async ({
+  page,
+}) => {
+  for (const viewport of [
+    { width: 390, height: 844 },
+    { width: 320, height: 568 },
+  ]) {
+    await page.setViewportSize(viewport);
+    await page.goto(process.env.E2E_PATH || "/");
+    await expect(
+      page.getByRole("heading", { name: "Учимся играть" }),
+    ).toBeVisible();
+    await page.waitForFunction(() =>
+      Array.from(document.images).every(
+        (i) => i.complete && i.naturalWidth > 0,
+      ),
+    );
+    const list = await page.locator(".lesson-scroll").boundingBox();
+    expect(list!.height).toBeGreaterThan(140);
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+    ).toBe(true);
+    await page.screenshot({
+      path: "test-results/home-" + viewport.width + ".png",
+    });
+  }
+});
+
+test("свободная практика продолжается после пятой задачи и заканчивается по выбору", async ({
+  page,
+}) => {
+  await page.goto(process.env.E2E_PATH || "/");
+  await page.getByRole("button", { name: "Тренажёры", exact: true }).click();
+  await page.getByRole("button", { name: /01 Старшинство карт/ }).click();
+  for (let i = 0; i < 7; i++) {
+    await expect(page.locator(".session-heading")).toContainText(
+      "Задание " + (i + 1),
+    );
+    const cards = await page
+      .locator(".table .card")
+      .evaluateAll((els) => els.map((e) => e.getAttribute("data-card")!));
+    const ranks = "23456789TJQKA",
+      diff = ranks.indexOf(cards[0][0]) - ranks.indexOf(cards[1][0]);
+    await page
+      .getByRole("button", {
+        name: diff === 0 ? "Равны" : diff > 0 ? "Левая" : "Правая",
+        exact: true,
+      })
+      .click();
+    await page.getByRole("button", { name: "Проверить ответ" }).click();
+    await expect(page.locator(".feedback")).toContainText("Верно");
+    await expect(page.locator(".feedback .sava-panel")).toHaveCount(0);
+    await expect(page.locator(".correct-burst")).toHaveCount(1);
+    if (i < 6)
+      await page
+        .getByRole("button", { name: "Следующая задача", exact: true })
+        .click();
+  }
+  await page
+    .getByRole("button", { name: "Закончить тренировку", exact: true })
+    .click();
+  await expect(page.locator(".big-result")).toContainText("7 / 7");
+  expect(
+    await page.evaluate(
+      () =>
+        JSON.parse(localStorage.getItem("river.progress.v1")!).attempts.length,
+    ),
+  ).toBe(7);
+});
+test("урок 0: понятные подписи, крупный Сава и вся лестница из 13 карт", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto(process.env.E2E_PATH || "/");
+  await page.getByRole("button", { name: "Начать урок", exact: true }).click();
+  await expect(page.getByText("Трефы (крести)", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Далее", exact: true }).click();
+  await expect(
+    page.getByRole("heading", { name: "Карты по старшинству" }),
+  ).toBeVisible();
+  await expect(page.getByText("Это рубашка", { exact: false })).toHaveCount(0);
+  expect(
+    await page.locator(".card-center i").evaluateAll((els) =>
+      els.every((e) => {
+        const r = e.getBoundingClientRect();
+        return r.width > 3 && r.height > 3;
+      }),
+    ),
+  ).toBe(true);
+  await page.screenshot({ path: "test-results/lesson-numbers.png" });
+  await page.getByRole("button", { name: "Далее", exact: true }).click();
+  await page.waitForFunction(() =>
+    Array.from(document.images).every((i) => i.complete && i.naturalWidth > 0),
+  );
+  await page.screenshot({ path: "test-results/lesson-sava.png" });
+  await page.getByRole("button", { name: "Далее", exact: true }).click();
+  await page.getByRole("button", { name: "Далее", exact: true }).click();
+  await expect(page.locator(".rank-ladder .card")).toHaveCount(13);
+  await page.screenshot({ path: "test-results/lesson-ladder.png" });
+  await page.setViewportSize({ width: 320, height: 568 });
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+  await page.screenshot({ path: "test-results/lesson-ladder-320.png" });
+  await page.getByRole("button", { name: "Завершить чтение" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Урок пройден" }),
+  ).toBeVisible();
+  await page
+    .getByRole("button", { name: "Тренироваться", exact: true })
+    .click();
+  await page.locator(".choices button").first().click();
+  await page.getByRole("button", { name: "Проверить ответ" }).click();
+  await page
+    .getByRole("button", { name: "Закончить тренировку", exact: true })
+    .click();
+  await expect(page.locator(".big-result")).toContainText("/ 1");
 });

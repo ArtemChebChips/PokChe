@@ -2021,3 +2021,210 @@ p {
   flex: 1;
   font-size: 13px;
 }
+
+/* Карточные масти — векторные, не зависят от установленного шрифта. */
+.suit-symbol {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.card .card-index i {
+  display: block;
+  width: 0.86em;
+  height: 0.86em;
+  font-size: inherit;
+}
+.card .card-center:not(.court-art) {
+  inset: 14% 24%;
+}
+.card-center:not(.court-art) > i {
+  width: 30%;
+  height: 19%;
+  display: block;
+  font-size: inherit;
+}
+.card-center:not(.court-art) > .ace-pip {
+  width: 76%;
+  height: 60%;
+}
+.suit-guide strong {
+  display: block;
+  width: 36px;
+  height: 40px;
+}
+.suit-guide div {
+  flex: 1;
+  min-width: 0;
+}
+.suit-guide span {
+  text-align: center;
+  font-size: 12px;
+  max-width: 75px;
+}
+.rank-ladder .cards {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px 6px;
+  justify-items: center;
+}
+.reader .rank-ladder .card {
+  width: 100%;
+  max-width: 55px;
+  height: auto;
+  aspect-ratio: 5/7;
+}
+.reader .rank-ladder .card-index {
+  font-size: 13px;
+}
+.rank-ladder .cards > .card:nth-child(11) {
+  grid-column: 2;
+}
+.rank-ladder > p {
+  margin-top: 18px;
+}
+.sava-panel {
+  position: relative;
+  display: block;
+  isolation: isolate;
+  min-height: 224px;
+  padding: 34px 0 24px;
+  margin: 30px 0 14px;
+  background: none;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+.sava-panel img {
+  position: absolute;
+  right: -22px;
+  bottom: 0;
+  width: 225px;
+  height: 225px;
+  object-fit: contain;
+  z-index: 3;
+  pointer-events: none;
+  filter: drop-shadow(0 5px 3px #24493710);
+}
+.sava-copy {
+  position: relative;
+  width: calc(100% - 130px);
+  padding: 13px 16px;
+  border: 1px solid #d7e8dc;
+  border-radius: 18px;
+  background: #fffef9;
+  z-index: 2;
+  box-shadow: 0 3px 10px #234d3b08;
+}
+.sava-copy:after {
+  content: "";
+  position: absolute;
+  right: -8px;
+  bottom: 23px;
+  width: 14px;
+  height: 14px;
+  background: #fffef9;
+  border-right: 1px solid #d7e8dc;
+  border-top: 1px solid #d7e8dc;
+  transform: rotate(45deg);
+}
+.sava-copy p {
+  font-size: 14px;
+  line-height: 1.55;
+  margin: 6px 0 0;
+}
+.sava-copy > span {
+  font-size: 12px;
+  color: #27674f;
+}
+.practice-count {
+  font-size: 12px;
+  color: var(--muted);
+  margin: 0 0 12px;
+}
+.session-heading strong {
+  font-size: 12px;
+  white-space: nowrap;
+}
+.feedback {
+  position: relative;
+}
+.correct-burst {
+  position: absolute;
+  left: 50%;
+  top: 18px;
+  width: 0;
+  height: 0;
+  z-index: 10;
+  pointer-events: none;
+}
+.correct-burst i {
+  position: absolute;
+  width: 7px;
+  height: 10px;
+  border-radius: 2px;
+  background: var(--color);
+  opacity: 0;
+  animation: confetti-pop 0.75s ease-out both;
+}
+@keyframes confetti-pop {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) rotate(0deg) scale(0.5);
+  }
+  65% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--x), var(--y)) rotate(var(--spin)) scale(0.85);
+  }
+}
+.result-dots {
+  flex-wrap: wrap;
+}
+@media (max-width: 360px) {
+  .sava-panel img {
+    width: 205px;
+    height: 225px;
+    right: -22px;
+  }
+  .sava-copy {
+    width: calc(100% - 112px);
+    padding: 12px;
+  }
+  .sava-copy p {
+    font-size: 13px;
+  }
+  .reader .rank-ladder .card-index {
+    font-size: 11px;
+  }
+  .reader .card {
+    width: 60px;
+    height: 84px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .correct-burst {
+    display: none;
+  }
+}
+
+.card .card-center:not(.court-art) {
+  width: 52%;
+  height: 72%;
+  align-self: auto;
+}
+.card .court-art {
+  width: 100%;
+  height: 95%;
+  align-self: auto;
+}
+.sava-copy {
+  width: calc(100% - 175px);
+}
+@media (max-width: 360px) {
+  .sava-copy {
+    width: calc(100% - 145px);
+  }
+}
