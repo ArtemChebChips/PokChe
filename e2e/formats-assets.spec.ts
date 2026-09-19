@@ -1,3 +1,4 @@
+import { lessons } from "../src/content";
 import { test, expect } from "@playwright/test";
 import { fresh } from "../src/progress";
 const root = process.env.E2E_PATH || "/";
@@ -41,7 +42,7 @@ for (const width of [320, 390]) {
     await page
       .getByRole("button", { name: "Мой прогресс", exact: true })
       .click();
-    await expect(page.getByText("1/9", { exact: true })).toBeVisible();
+    await expect(page.getByText(`1/${lessons.filter(l=>l.ready).length}`, { exact: true })).toBeVisible();
     const saved = await page.evaluate(() =>
       JSON.parse(localStorage.getItem("river.progress.v1")!),
     );

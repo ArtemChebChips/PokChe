@@ -1,3 +1,4 @@
+import { RangeExample } from "./RangeExample";
 import { PotCalculation } from "./PotCalculation";
 import { LessonMatrix } from "./LessonMatrix";
 import { StackExample } from "./StackExample";
@@ -143,6 +144,7 @@ export function LessonReader({
           (lesson.id === "cards" && step === 4 ? "rank-ladder" : "")
         }
       >
+        {slide.range && <RangeExample range={slide.range} />}
         {slide.potCalculation && <PotCalculation {...slide.potCalculation} />}
         {slide.matrix && <LessonMatrix key={step} initial={slide.matrix} />}
         {slide.stacks && <StackExample {...slide.stacks} />}

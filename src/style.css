@@ -2908,3 +2908,39 @@ main.main-content {
   margin-top: 14px;
   padding-top: 14px;
 }
+
+.range-example {
+  margin: 16px 0;
+  padding: 14px;
+  border-radius: 18px;
+  background: #e5f0e9;
+}
+.range-example figcaption {
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+.range-example > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 7px 0;
+}
+.range-example .cards {
+  margin: 0;
+  gap: 5px;
+}
+.range-example .card {
+  width: 36px;
+  height: auto;
+  aspect-ratio: 5/7;
+}
+.range-example > div > span {
+  font-size: 12px;
+  text-align: right;
+}
+.range-example strong {
+  display: block;
+  margin-top: 4px;
+}

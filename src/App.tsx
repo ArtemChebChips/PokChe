@@ -1,3 +1,4 @@
+import { RangeExample } from "./components/RangeExample";
 import { StackExample } from "./components/StackExample";
 import { PokerTable } from "./components/PokerTable";
 import { HandExample } from "./components/HandExample";
@@ -420,7 +421,7 @@ export default function App() {
             </button>
             <div className="section-heading">
               <h2>Выберите навык</h2>
-              <span>11 тренажёров</span>
+              <span>{allSkills.length} тренажёров</span>
             </div>
             <div className="skill-list">
               {allSkills.map((s, i) => (
@@ -431,11 +432,13 @@ export default function App() {
                   <span>
                     <strong>{skillNames[s]}</strong>
                     <small>
-                      {s === "equity"
-                        ? "Конкретная рука · полный перебор"
-                        : s === "spr"
-                          ? "Оставшийся стек ÷ банк"
-                          : "Точный ответ · без лимита задач"}
+                      {["betting", "ranges"].includes(s)
+                        ? "Заданные условия · проверяемый расчёт"
+                        : s === "equity"
+                          ? "Конкретная рука · полный перебор"
+                          : s === "spr"
+                            ? "Оставшийся стек ÷ банк"
+                            : "Точный ответ · без лимита задач"}
                     </small>
                   </span>
                   <ChevronRight size={18} />
@@ -590,9 +593,11 @@ export default function App() {
             </p>
             <div className="task-type">
               <ShieldCheck size={14} />{" "}
-              {task.skill === "equity"
-                ? "Точный расчёт · оценка округлена"
-                : "Точный ответ"}
+              {task.model
+                ? "Точный расчёт в заданной модели"
+                : task.skill === "equity"
+                  ? "Точный расчёт · оценка округлена"
+                  : "Точный ответ"}
             </div>
             <h1 className="task-title">{task.title}</h1>
             {task.context && <p className="context">{task.context}</p>}
@@ -686,6 +691,7 @@ export default function App() {
                 )}
               </section>
             )}
+            {task.range && <RangeExample range={task.range} />}
             <h2 className="prompt">{task.prompt}</h2>
             <details className="task-glossary" key={task.id}>
               <summary>Объяснить термины</summary>
@@ -704,10 +710,11 @@ export default function App() {
                     disabled={graded !== null}
                     aria-pressed={answer === c}
                     onClick={() => setAnswer(c)}
-                    className={`${answer === c ? "chosen" : ""} ${graded !== null && c === task.answer ? "correct" : ""} ${graded === false && answer === c ? "wrong" : ""}`}
+                    className={`${answer === c ? "chosen" : ""} ${graded !== null && (task.acceptedAnswers ?? [task.answer]).includes(c) ? "correct" : ""} ${graded === false && answer === c ? "wrong" : ""}`}
                   >
                     {c}
-                    {graded !== null && c === task.answer ? (
+                    {graded !== null &&
+                    (task.acceptedAnswers ?? [task.answer]).includes(c) ? (
                       <Check size={20} />
                     ) : (
                       <span className="radio" />

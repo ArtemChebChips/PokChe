@@ -1,3 +1,4 @@
+import { lessons } from "../src/content";
 import { test, expect } from "@playwright/test";
 
 test("урок → задачи → разбор → перезагрузка → повторение ошибок → офлайн", async ({
@@ -56,7 +57,7 @@ test("урок → задачи → разбор → перезагрузка �
   await page.reload();
   await page.getByRole("button", { name: "Мой прогресс", exact: true }).click();
   await expect(page.locator(".stats")).toContainText("5");
-  await expect(page.locator(".progress-card")).toContainText("1/9");
+  await expect(page.locator(".progress-card")).toContainText(`1/${lessons.filter(l=>l.ready).length}`);
   await page.getByRole("button", { name: "Повторить ошибки · 1" }).click();
   await expect(
     page.getByRole("heading", { name: "Старшинство карт" }),

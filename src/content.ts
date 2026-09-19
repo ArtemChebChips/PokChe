@@ -1,3 +1,6 @@
+import { betsSlides } from "./betsLesson";
+import { rangeSlides } from "./rangeLesson";
+import type { WeightedHand } from "./rangeMath";
 import { boardSlides } from "./boardLesson";
 import { preflopSlides } from "./preflopLesson";
 import { mathSlides } from "./mathLesson";
@@ -9,6 +12,8 @@ import type { StackState } from "./components/StackExample";
 import { handFlowSlides } from "./handFlowLesson";
 import { combinationSlides } from "./combinationLesson";
 export type Skill =
+  | "betting"
+  | "ranges"
   | "cards"
   | "combination"
   | "best"
@@ -22,6 +27,7 @@ export type Skill =
   | "texture"
   | "equity";
 export type Slide = {
+  range?: WeightedHand[];
   potCalculation?: PotCalculationState;
   scene?: FlowScene;
   stacks?: StackState;
@@ -58,6 +64,8 @@ export type Lesson = {
   ready: boolean;
 };
 export const skillNames: Record<Skill, string> = {
+  betting: "Добор, блеф и размер",
+  ranges: "Диапазоны и эквити",
   cards: "Старшинство карт",
   combination: "Узнай комбинацию",
   best: "Лучшая пятёрка",
@@ -210,14 +218,25 @@ export const lessons: Lesson[] = [
     ready: true,
     slides: boardSlides,
   },
+  {
+    id: "bets",
+    num: "08",
+    title: "Логика ставок",
+    subtitle: "Добор, блеф, чек и цена размера",
+    skills: ["betting"],
+    slides: betsSlides,
+    ready: true,
+  },
+  {
+    id: "postflop",
+    num: "09",
+    title: "Диапазоны на постфлопе",
+    subtitle: "Комбинации, веса и эквити",
+    skills: ["ranges"],
+    slides: rangeSlides,
+    ready: true,
+  },
   ...[
-    ["bets", "08", "Логика ставок", "Добор, блеф, полублеф и размеры"],
-    [
-      "postflop",
-      "09",
-      "Диапазоны на постфлопе",
-      "Сужение диапазонов и сравнение силы",
-    ],
     [
       "plan",
       "10",

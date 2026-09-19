@@ -28,6 +28,8 @@ export const fresh = (): Progress => ({
   days: [],
 });
 const skills = [
+  "betting",
+  "ranges",
   "cards",
   "combination",
   "best",
@@ -69,6 +71,44 @@ function validTask(t: Task): boolean {
     validate([...(t.cards ?? []), ...(t.board ?? []), ...(t.opponent ?? [])]);
   } catch {
     return false;
+  }
+  if (t.model !== undefined && typeof t.model !== "string") return false;
+  if (
+    t.acceptedAnswers !== undefined &&
+    (!Array.isArray(t.acceptedAnswers) ||
+      !t.acceptedAnswers.length ||
+      !t.acceptedAnswers.includes(t.answer) ||
+      !t.acceptedAnswers.every(
+        (a) => typeof a === "string" && t.choices.includes(a),
+      ))
+  )
+    return false;
+  if (t.range !== undefined) {
+    if (
+      !Array.isArray(t.range) ||
+      !t.range.length ||
+      !t.range.some((h) => h.weight > 0)
+    )
+      return false;
+    const seen = new Set<string>();
+    for (const h of t.range) {
+      if (
+        !h ||
+        !Number.isFinite(h.weight) ||
+        h.weight < 0 ||
+        !Array.isArray(h.cards) ||
+        h.cards.length !== 2
+      )
+        return false;
+      try {
+        validate([...(t.cards ?? []), ...(t.board ?? []), ...h.cards]);
+      } catch {
+        return false;
+      }
+      const k = [...h.cards].sort().join("");
+      if (seen.has(k)) return false;
+      seen.add(k);
+    }
   }
   if (t.scene !== undefined) {
     const scene = t.scene;

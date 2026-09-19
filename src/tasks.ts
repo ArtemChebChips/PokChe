@@ -1,3 +1,5 @@
+import { modelTask, modelFamilies } from "./modelTasks";
+import type { WeightedHand } from "./rangeMath";
 import {
   boardTask,
   boardFamilies,
@@ -16,6 +18,9 @@ import { deck, ranks, suits, evaluate, compare, spr, handLabel } from "./poker";
 import { type Skill, skillNames } from "./content";
 export type CardKind = "figures" | "ace" | "equal" | "numbers";
 export type Task = {
+  range?: WeightedHand[];
+  model?: string;
+  acceptedAnswers?: string[];
   scene?: FlowScene;
   stacks?: StackState;
   variant?: CardKind;
@@ -42,6 +47,7 @@ export type Task = {
 export const allSkills = Object.keys(skillNames) as Skill[];
 const fmt = (n: number) => Number(n.toFixed(1)).toLocaleString("ru-RU");
 export function generate(skill: Skill): Task {
+  if (skill === "betting" || skill === "ranges") return modelTask(skill);
   if (skill === "texture") return boardTask();
   if (skill === "equity") return targetedEquityTask();
   if (skill === "cards")
@@ -145,7 +151,7 @@ export function check(
       return false;
     return compare(evaluate(selected).score, evaluate(available).score) === 0;
   }
-  return task.answer === answer;
+  return (task.acceptedAnswers ?? [task.answer]).includes(answer);
 }
 
 const rankNames: Record<string, string> = {
@@ -198,14 +204,24 @@ export function cardTask(kind: CardKind, pair?: string[]): Task {
 export function generateSession(skills: Skill[], count: number): Task[] {
   if (!skills.length || !Number.isInteger(count) || count < 1 || count > 20)
     throw Error("Invalid session");
+  if (
+    skills.length === 1 &&
+    (skills[0] === "betting" || skills[0] === "ranges")
+  ) {
+    const skill = skills[0];
+    const families = shuffle(modelFamilies[skill]);
+    return Array.from({ length: count }, (_, i) =>
+      modelTask(skill, families[i % families.length]),
+    );
+  }
   if (skills.length === 1 && skills[0] === "texture")
-    return shuffle(boardFamilies)
-      .slice(0, count)
-      .map((f) => boardTask(f));
+    return Array.from({ length: count }, (_, i) =>
+      boardTask(boardFamilies[i % boardFamilies.length]),
+    );
   if (skills.length === 1 && skills[0] === "equity")
-    return shuffle([...drawCases])
-      .slice(0, count)
-      .map((c) => targetedEquityTask(c.id));
+    return Array.from({ length: count }, (_, i) =>
+      targetedEquityTask(drawCases[i % drawCases.length].id),
+    );
   if (skills.length === 1 && skills[0] === "preflop" && count === 5)
     return preflopSession();
   if (skills.length === 1 && skills[0] === "odds" && count === 5)
@@ -246,6 +262,8 @@ export function generateSession(skills: Skill[], count: number): Task[] {
   );
 }
 export function generateSimilar(task: Task): Task {
+  if (task.skill === "betting" || task.skill === "ranges")
+    return modelTask(task.skill, task.scenario);
   if (task.skill === "texture") return boardTask(task.scenario);
   if (task.skill === "equity") return targetedEquityTask(task.scenario);
   if (task.skill === "preflop") return preflopTask(task.scenario);
