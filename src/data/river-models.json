@@ -1,0 +1,172 @@
+{
+  "version": 1,
+  "model": "Heads-up river; value always beats bluff catcher, bluff always loses; attacker check/bet, defender fold/call; no rake or raises; range is explicitly synthetic.",
+  "solver": "SciPy 1.16.2 / HiGHS dual linear programs",
+  "scriptSha256": "a6c87a1b4468383679df56e5ac66dff6dbbd33e2774c81915b89503a392e78f0",
+  "tolerances": [
+    1e-07,
+    1e-09
+  ],
+  "scenarios": [
+    {
+      "id": "river-1",
+      "pot": 100,
+      "bet": 25,
+      "valueWeight": 0.5,
+      "board": [
+        "Qs",
+        "8h",
+        "3c",
+        "2d",
+        "9s"
+      ],
+      "valueHand": [
+        "As",
+        "Ah"
+      ],
+      "bluffHand": [
+        "Jh",
+        "6h"
+      ],
+      "defenderHand": [
+        "Kc",
+        "Kd"
+      ],
+      "valueBet": 1.0,
+      "bluffBet": 0.2,
+      "defenderCall": 0.8,
+      "gameValue": 60.0,
+      "gap": 0.0,
+      "bluffEV": -3.552713678800501e-15,
+      "valueEV": 120.0
+    },
+    {
+      "id": "river-2",
+      "pot": 100,
+      "bet": 50,
+      "valueWeight": 0.5,
+      "board": [
+        "Qs",
+        "8h",
+        "3c",
+        "2d",
+        "9s"
+      ],
+      "valueHand": [
+        "As",
+        "Ah"
+      ],
+      "bluffHand": [
+        "Jh",
+        "6h"
+      ],
+      "defenderHand": [
+        "Kc",
+        "Kd"
+      ],
+      "valueBet": 1.0,
+      "bluffBet": 0.3333333333333333,
+      "defenderCall": 0.6666666666666667,
+      "gameValue": 66.66666666666667,
+      "gap": 1.4210854715202004e-14,
+      "bluffEV": -7.105427357601002e-15,
+      "valueEV": 133.33333333333334
+    },
+    {
+      "id": "river-3",
+      "pot": 100,
+      "bet": 75,
+      "valueWeight": 0.4,
+      "board": [
+        "Qs",
+        "8h",
+        "3c",
+        "2d",
+        "9s"
+      ],
+      "valueHand": [
+        "As",
+        "Ah"
+      ],
+      "bluffHand": [
+        "Jh",
+        "6h"
+      ],
+      "defenderHand": [
+        "Kc",
+        "Kd"
+      ],
+      "valueBet": 1.0,
+      "bluffBet": 0.2857142857142857,
+      "defenderCall": 0.5714285714285714,
+      "gameValue": 57.14285714285714,
+      "gap": 0.0,
+      "bluffEV": 7.105427357601002e-15,
+      "valueEV": 142.85714285714286
+    },
+    {
+      "id": "river-4",
+      "pot": 100,
+      "bet": 100,
+      "valueWeight": 0.6,
+      "board": [
+        "Qs",
+        "8h",
+        "3c",
+        "2d",
+        "9s"
+      ],
+      "valueHand": [
+        "As",
+        "Ah"
+      ],
+      "bluffHand": [
+        "Jh",
+        "6h"
+      ],
+      "defenderHand": [
+        "Kc",
+        "Kd"
+      ],
+      "valueBet": 1.0000000000000002,
+      "bluffBet": 0.7500000000000002,
+      "defenderCall": 0.5,
+      "gameValue": 90.00000000000003,
+      "gap": 0.0,
+      "bluffEV": 0.0,
+      "valueEV": 150.0
+    },
+    {
+      "id": "river-5",
+      "pot": 100,
+      "bet": 150,
+      "valueWeight": 0.5,
+      "board": [
+        "Qs",
+        "8h",
+        "3c",
+        "2d",
+        "9s"
+      ],
+      "valueHand": [
+        "As",
+        "Ah"
+      ],
+      "bluffHand": [
+        "Jh",
+        "6h"
+      ],
+      "defenderHand": [
+        "Kc",
+        "Kd"
+      ],
+      "valueBet": 0.9999999999999998,
+      "bluffBet": 0.5999999999999998,
+      "defenderCall": 0.4,
+      "gameValue": 79.99999999999999,
+      "gap": 1.4210854715202004e-14,
+      "bluffEV": 0.0,
+      "valueEV": 160.0
+    }
+  ]
+}

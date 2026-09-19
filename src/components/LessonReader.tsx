@@ -1,3 +1,5 @@
+import { LinePlanner } from "./LinePlanner";
+import { RiverLab } from "./RiverLab";
 import { RangeExample } from "./RangeExample";
 import { PotCalculation } from "./PotCalculation";
 import { LessonMatrix } from "./LessonMatrix";
@@ -144,6 +146,8 @@ export function LessonReader({
           (lesson.id === "cards" && step === 4 ? "rank-ladder" : "")
         }
       >
+        {slide.linePlanner && <LinePlanner />}
+        {slide.riverLab && <RiverLab />}
         {slide.range && <RangeExample range={slide.range} />}
         {slide.potCalculation && <PotCalculation {...slide.potCalculation} />}
         {slide.matrix && <LessonMatrix key={step} initial={slide.matrix} />}

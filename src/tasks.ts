@@ -1,3 +1,10 @@
+import {
+  planningTask,
+  adjustmentTask,
+  advancedTask,
+  adjustmentFamilies,
+  advancedFamilies,
+} from "./advancedTasks";
 import { modelTask, modelFamilies } from "./modelTasks";
 import type { WeightedHand } from "./rangeMath";
 import {
@@ -18,6 +25,7 @@ import { deck, ranks, suits, evaluate, compare, spr, handLabel } from "./poker";
 import { type Skill, skillNames } from "./content";
 export type CardKind = "figures" | "ace" | "equal" | "numbers";
 export type Task = {
+  nextTask?: Task;
   range?: WeightedHand[];
   model?: string;
   acceptedAnswers?: string[];
@@ -47,6 +55,9 @@ export type Task = {
 export const allSkills = Object.keys(skillNames) as Skill[];
 const fmt = (n: number) => Number(n.toFixed(1)).toLocaleString("ru-RU");
 export function generate(skill: Skill): Task {
+  if (skill === "planning") return planningTask();
+  if (skill === "adjustment") return adjustmentTask();
+  if (skill === "advanced") return advancedTask();
   if (skill === "betting" || skill === "ranges") return modelTask(skill);
   if (skill === "texture") return boardTask();
   if (skill === "equity") return targetedEquityTask();
@@ -202,6 +213,21 @@ export function cardTask(kind: CardKind, pair?: string[]): Task {
   };
 }
 export function generateSession(skills: Skill[], count: number): Task[] {
+  if (
+    skills.length === 1 &&
+    (skills[0] === "adjustment" || skills[0] === "advanced")
+  ) {
+    if (!Number.isInteger(count) || count < 1 || count > 20)
+      throw Error("Invalid session");
+    const families = shuffle(
+      skills[0] === "adjustment" ? adjustmentFamilies : advancedFamilies,
+    );
+    return Array.from({ length: count }, (_, i) =>
+      skills[0] === "adjustment"
+        ? adjustmentTask(families[i % families.length])
+        : advancedTask(families[i % families.length]),
+    );
+  }
   if (!skills.length || !Number.isInteger(count) || count < 1 || count > 20)
     throw Error("Invalid session");
   if (
@@ -262,6 +288,12 @@ export function generateSession(skills: Skill[], count: number): Task[] {
   );
 }
 export function generateSimilar(task: Task): Task {
+  if (task.skill === "planning")
+    return task.scenario === "river-price"
+      ? planningTask().nextTask!
+      : planningTask();
+  if (task.skill === "adjustment") return adjustmentTask(task.scenario);
+  if (task.skill === "advanced") return advancedTask(task.scenario);
   if (task.skill === "betting" || task.skill === "ranges")
     return modelTask(task.skill, task.scenario);
   if (task.skill === "texture") return boardTask(task.scenario);

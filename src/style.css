@@ -2944,3 +2944,54 @@ main.main-content {
   display: block;
   margin-top: 4px;
 }
+
+.line-planner,
+.river-lab {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 14px;
+  margin: 18px 0;
+  background: var(--paper);
+}
+.line-planner .line-options {
+  display: flex;
+  gap: 8px;
+  flex-wrap: nowrap;
+}
+.line-planner .line-options button {
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+.line-planner button[aria-pressed="true"] {
+  background: #246c58;
+  color: white;
+}
+.river-lab select {
+  max-width: 100%;
+  padding: 8px;
+  margin: 8px;
+  border-radius: 8px;
+  font: inherit;
+}
+.river-lab dl {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+}
+.river-lab dd {
+  margin: 0;
+  font-weight: 700;
+}
+.river-lab small,
+.line-planner small {
+  display: block;
+  line-height: 1.5;
+}
+
+.line-planner .line-options button {
+  flex: 1;
+  min-width: 0;
+  padding: 10px 4px;
+  font-size: 13px;
+}

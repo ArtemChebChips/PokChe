@@ -1,3 +1,6 @@
+import { planSlides } from "./planLesson";
+import { adjustSlides } from "./adjustLesson";
+import { advancedSlides } from "./advancedLesson";
 import { betsSlides } from "./betsLesson";
 import { rangeSlides } from "./rangeLesson";
 import type { WeightedHand } from "./rangeMath";
@@ -12,6 +15,9 @@ import type { StackState } from "./components/StackExample";
 import { handFlowSlides } from "./handFlowLesson";
 import { combinationSlides } from "./combinationLesson";
 export type Skill =
+  | "planning"
+  | "adjustment"
+  | "advanced"
   | "betting"
   | "ranges"
   | "cards"
@@ -27,6 +33,8 @@ export type Skill =
   | "texture"
   | "equity";
 export type Slide = {
+  linePlanner?: boolean;
+  riverLab?: boolean;
   range?: WeightedHand[];
   potCalculation?: PotCalculationState;
   scene?: FlowScene;
@@ -64,8 +72,6 @@ export type Lesson = {
   ready: boolean;
 };
 export const skillNames: Record<Skill, string> = {
-  betting: "Добор, блеф и размер",
-  ranges: "Диапазоны и эквити",
   cards: "Старшинство карт",
   combination: "Узнай комбинацию",
   best: "Лучшая пятёрка",
@@ -78,6 +84,11 @@ export const skillNames: Record<Skill, string> = {
   spr: "Считай SPR",
   texture: "Доска и дро",
   equity: "Оцени эквити",
+  betting: "Добор, блеф и размер",
+  ranges: "Диапазоны и эквити",
+  planning: "План на две улицы",
+  adjustment: "Наблюдения и подстройка",
+  advanced: "Блокеры и частоты",
 };
 const slide = (
   title: string,
@@ -260,9 +271,16 @@ export const lessons: Lesson[] = [
     num,
     title,
     subtitle,
-    skills: [] as Skill[],
-    slides: [],
-    ready: false,
+    skills: [
+      id === "plan" ? "planning" : id === "adjust" ? "adjustment" : "advanced",
+    ] as Skill[],
+    slides:
+      id === "plan"
+        ? planSlides
+        : id === "adjust"
+          ? adjustSlides
+          : advancedSlides,
+    ready: true,
   })),
   {
     id: "mindset",

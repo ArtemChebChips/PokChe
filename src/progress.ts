@@ -3,6 +3,8 @@ import type { Skill } from "./content";
 import type { Task } from "./tasks";
 import { validate } from "./poker";
 export type Attempt = {
+  taskId?: string;
+  scenario?: string;
   skill: Skill;
   correct: boolean;
   at: string;
@@ -28,6 +30,9 @@ export const fresh = (): Progress => ({
   days: [],
 });
 const skills = [
+  "planning",
+  "adjustment",
+  "advanced",
   "betting",
   "ranges",
   "cards",
@@ -43,7 +48,10 @@ const skills = [
   "texture",
   "equity",
 ];
-function validTask(t: Task): boolean {
+function validTask(t: Task, depth = 0): boolean {
+  if (depth > 2) return false;
+  if (t?.nextTask !== undefined && !validTask(t.nextTask, depth + 1))
+    return false;
   if (
     !t ||
     typeof t.id !== "string" ||
@@ -198,13 +206,15 @@ export function validProgress(p: unknown): p is Progress {
       (a) =>
         a &&
         skills.includes(a.skill) &&
+        (a.taskId === undefined || typeof a.taskId === "string") &&
+        (a.scenario === undefined || typeof a.scenario === "string") &&
         typeof a.correct === "boolean" &&
         typeof a.assisted === "boolean" &&
         typeof a.at === "string" &&
         Number.isFinite(Date.parse(a.at)),
     ) &&
     Array.isArray(v.mistakes) &&
-    v.mistakes.every(validTask)
+    v.mistakes.every((t) => validTask(t))
   );
 }
 export function loadProgress(): { progress: Progress; error: string } {
@@ -233,7 +243,14 @@ export function record(
     ...p,
     attempts: [
       ...p.attempts,
-      { skill: task.skill, correct, assisted, at: new Date().toISOString() },
+      {
+        skill: task.skill,
+        taskId: task.id,
+        scenario: task.scenario,
+        correct,
+        assisted,
+        at: new Date().toISOString(),
+      },
     ].slice(-5000),
     days: [...new Set([...p.days, day])],
     mistakes: correct
@@ -242,14 +259,41 @@ export function record(
   };
 }
 export function mastery(p: Progress, skill: Skill) {
+  const needed: Partial<Record<Skill, number>> = {
+    texture: 3,
+    equity: 3,
+    betting: 3,
+    ranges: 3,
+    planning: 2,
+    adjustment: 3,
+    advanced: 3,
+  };
+  const distinct = needed[skill] ?? 0;
+  const seen = new Set<string>();
   const a = p.attempts
     .filter((x) => x.skill === skill && !x.assisted)
-    .slice(-10);
+    .slice()
+    .reverse()
+    .filter((x) => {
+      if (!distinct) return true;
+      if (!x.taskId || seen.has(x.taskId)) return false;
+      seen.add(x.taskId);
+      return true;
+    })
+    .slice(0, 10);
+  const diversity = new Set(
+    a.filter((x) => x.correct && x.scenario).map((x) => x.scenario),
+  ).size;
   return {
     total: a.length,
+    diversity,
+    requiredDiversity: distinct,
     accuracy: a.length
       ? Math.round((a.filter((x) => x.correct).length / a.length) * 100)
       : 0,
-    mastered: a.length >= 10 && a.filter((x) => x.correct).length >= 8,
+    mastered:
+      a.length >= 10 &&
+      a.filter((x) => x.correct).length >= 8 &&
+      diversity >= distinct,
   };
 }

@@ -237,6 +237,13 @@ export default function App() {
   }
   function next() {
     if (!session || loading) return;
+    if (task?.nextTask) {
+      const tasks = [...session.tasks];
+      tasks.splice(session.index + 1, 0, task.nextTask);
+      setSession({ ...session, tasks, index: session.index + 1 });
+      resetAnswer();
+      return;
+    }
     if (session.index < session.tasks.length - 1) {
       setSession({ ...session, index: session.index + 1 });
       resetAnswer();
@@ -432,13 +439,15 @@ export default function App() {
                   <span>
                     <strong>{skillNames[s]}</strong>
                     <small>
-                      {["betting", "ranges"].includes(s)
+                      {["betting", "ranges", "planning", "advanced"].includes(s)
                         ? "Заданные условия · проверяемый расчёт"
-                        : s === "equity"
-                          ? "Конкретная рука · полный перебор"
-                          : s === "spr"
-                            ? "Оставшийся стек ÷ банк"
-                            : "Точный ответ · без лимита задач"}
+                        : s === "adjustment"
+                          ? "Частоты · данные и неопределённость"
+                          : s === "equity"
+                            ? "Конкретная рука · полный перебор"
+                            : s === "spr"
+                              ? "Оставшийся стек ÷ банк"
+                              : "Точный ответ · без лимита задач"}
                     </small>
                   </span>
                   <ChevronRight size={18} />
@@ -457,12 +466,13 @@ export default function App() {
               <ChevronRight size={18} />
             </button>
             <details className="info-box">
-              <summary>Почему нет стратегических оценок?</summary>
+              <summary>О моделях и источниках</summary>
               <p>{sourceReview.reason}</p>
               <p>
-                «Собери диапазон», префлоп-действия и солверные задачи появятся
-                после подключения проверенного набора. Турнирная ветка пока в
-                программе развития.
+                Сейчас доступны точные расчёты и пять ограниченных моделей
+                ривера. Полные чарты открытий и ответы на 3-бет требуют
+                проверенного набора с совпадающими условиями. Турнирная ветка
+                пока в программе развития.
               </p>
               <a href={sourceReview.url} target="_blank" rel="noreferrer">
                 Посмотреть источник ↗
@@ -538,7 +548,7 @@ export default function App() {
                       {m.mastered
                         ? "Освоен"
                         : m.total
-                          ? `${m.total}/10 ответов без подсказки`
+                          ? `${m.total}/10 ответов без подсказки${m.requiredDiversity ? ` · типы задач ${Math.min(m.diversity, m.requiredDiversity)}/${m.requiredDiversity}` : ""}`
                           : "Ещё не тренировались"}
                     </small>
                   </button>
@@ -547,7 +557,8 @@ export default function App() {
             </div>
             <p className="muted">
               Освоен: минимум 8 верных из последних 10 ответов без подсказки.
-              Это учебный ориентир.
+              Для тем 07–12 нужны разные типы задач; повтор той же сохранённой
+              задачи не увеличивает счётчик. Это учебный ориентир.
             </p>
             <button
               className="primary"
@@ -594,7 +605,7 @@ export default function App() {
             <div className="task-type">
               <ShieldCheck size={14} />{" "}
               {task.model
-                ? "Точный расчёт в заданной модели"
+                ? task.model
                 : task.skill === "equity"
                   ? "Точный расчёт · оценка округлена"
                   : "Точный ответ"}
@@ -798,9 +809,13 @@ export default function App() {
                   )}
                 </div>
                 <button className="primary" onClick={next} disabled={loading}>
-                  {session.review && session.index === session.tasks.length - 1
+                  {session.review &&
+                  session.index === session.tasks.length - 1 &&
+                  !task.nextTask
                     ? "Закончить повторение"
-                    : "Следующая задача"}
+                    : task.nextTask
+                      ? "Следующее решение"
+                      : "Следующая задача"}
                   <ArrowRight size={18} />
                 </button>
                 <button

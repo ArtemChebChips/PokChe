@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { lessons } from "../src/content";
 const root = process.env.E2E_PATH || "/";
-for (const id of ["board", "bets", "postflop"])
+for (const id of ["board", "bets", "postflop", "plan", "adjust", "advanced"])
   for (const width of [320, 390])
     test(`урок ${id} и практика на ${width}`, async ({ page }) => {
       await page.setViewportSize({ width, height: 740 });
