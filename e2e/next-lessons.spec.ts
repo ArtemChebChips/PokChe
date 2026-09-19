@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 import { lessons } from "../src/content";
 import { preflopTask } from "../src/preflopTasks";
 import { oddsTask } from "../src/mathTasks";

@@ -1,3 +1,5 @@
+import { WelcomeTour } from "./components/WelcomeTour";
+import { tourSteps, needsTour, rememberTour } from "./tour";
 import { RangeExample } from "./components/RangeExample";
 import { StackExample } from "./components/StackExample";
 import { PokerTable } from "./components/PokerTable";
@@ -59,6 +61,9 @@ type Session = {
 
 export default function App() {
   const [initial] = useState(loadProgress);
+  const [tourStep, setTourStep] = useState<number | null>(() =>
+    needsTour() ? 0 : null,
+  );
   const [progress, setProgress] = useState<Progress>(initial.progress);
   const [storageError, setStorageError] = useState(initial.error);
   const [storageBlocked, setStorageBlocked] = useState(!!initial.error);
@@ -72,6 +77,21 @@ export default function App() {
     | "matrix"
     | "formats"
   >("main");
+  useEffect(() => {
+    if (tourStep === null) return;
+    const current = tourSteps[tourStep];
+    setTab(current.tab);
+    setScreen(current.target === "settings" ? "settings" : "main");
+  }, [tourStep]);
+  function finishTour() {
+    rememberTour();
+    setTourStep(null);
+    setScreen("main");
+    setTab("learn");
+    requestAnimationFrame(() =>
+      document.querySelector<HTMLButtonElement>(".brand")?.focus(),
+    );
+  }
   const [lesson, setLesson] = useState<Lesson>(lessons[0]);
   const [step, setStep] = useState(0);
   const homeScroll = useRef(0);
@@ -328,7 +348,10 @@ export default function App() {
     }
   }
   return (
-    <div className="app">
+    <div
+      className="app"
+      data-tour={tourStep === null ? undefined : tourSteps[tourStep].target}
+    >
       <header className="topbar">
         <button
           className="brand"
@@ -989,6 +1012,12 @@ export default function App() {
               <ArrowLeft size={18} /> Назад
             </button>
             <h1>Всё под рукой.</h1>
+            <button
+              className="secondary replay-tour"
+              onClick={() => setTourStep(0)}
+            >
+              Экскурсия с Иванычем
+            </button>
             <p className="lead">PokChe · версия 0.1 · личная практика</p>
             <section className="info-box">
               <h2>
@@ -1118,6 +1147,13 @@ export default function App() {
             </button>
           </section>
         </div>
+      )}
+      {tourStep !== null && (
+        <WelcomeTour
+          step={tourStep}
+          onStep={setTourStep}
+          onFinish={finishTour}
+        />
       )}
       {screen === "main" && (
         <nav className="bottom-nav" aria-label="Основная навигация">

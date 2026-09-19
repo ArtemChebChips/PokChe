@@ -1,5 +1,5 @@
 import { lessons } from "../src/content";
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 import { fresh } from "../src/progress";
 const root = process.env.E2E_PATH || "/";
 for (const width of [320, 390]) {

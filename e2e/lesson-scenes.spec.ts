@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 import { handFlowTask } from "../src/handFlowTasks";
 import { fresh } from "../src/progress";
 const path = process.env.E2E_PATH || "/";

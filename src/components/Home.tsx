@@ -1,18 +1,5 @@
 import { useLayoutEffect, useRef } from "react";
-import {
-  ArrowRight,
-  CheckCircle2,
-  ChevronRight,
-  Clock3,
-  BookOpen,
-  Layers,
-  Coins,
-  Filter,
-  Route,
-  ScanEye,
-  BrainCircuit,
-  HeartPulse,
-} from "lucide-react";
+import { ArrowRight, CheckCircle2, ChevronRight, Clock3 } from "lucide-react";
 import { lessons, type Lesson } from "../content";
 import type { Progress } from "../progress";
 
@@ -29,35 +16,15 @@ export function TopicIcon({ lesson }: { lesson: Lesson }) {
     positions: "positions",
     ranges: "starting-hands",
   };
-  const asset = ["preflop", "math"].includes(lesson.id)
-    ? lesson.id + ".svg"
-    : assets[lesson.id]
-      ? assets[lesson.id] + ".png"
-      : undefined;
-  const Icon =
-    (
-      {
-        board: Layers,
-        bets: Coins,
-        postflop: Filter,
-        plan: Route,
-        adjust: ScanEye,
-        advanced: BrainCircuit,
-        mindset: HeartPulse,
-      } as Record<string, typeof BookOpen>
-    )[lesson.id] ?? BookOpen;
+  const asset = assets[lesson.id] ?? lesson.id;
   return (
     <span className="topic-icon" aria-hidden="true">
-      {asset ? (
-        <img
-          src={import.meta.env.BASE_URL + "art/topic-" + asset}
-          alt=""
-          width="48"
-          height="48"
-        />
-      ) : (
-        <Icon size={28} strokeWidth={1.6} />
-      )}
+      <img
+        src={import.meta.env.BASE_URL + "art/topic-" + asset + ".png"}
+        alt=""
+        width="48"
+        height="48"
+      />
     </span>
   );
 }

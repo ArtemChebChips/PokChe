@@ -1,5 +1,5 @@
 import { lessons } from "../src/content";
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 
 test("урок → задачи → разбор → перезагрузка → повторение ошибок → офлайн", async ({
   page,

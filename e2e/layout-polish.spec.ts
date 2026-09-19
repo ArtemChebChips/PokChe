@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 import { combinationTask } from "../src/combinationTasks";
 import { handFlowTask } from "../src/handFlowTasks";
 import { fresh } from "../src/progress";

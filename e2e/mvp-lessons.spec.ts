@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 import { lessons } from "../src/content";
 const root = process.env.E2E_PATH || "/";
 for (const id of [
