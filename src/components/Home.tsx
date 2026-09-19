@@ -5,6 +5,13 @@ import {
   ChevronRight,
   Clock3,
   BookOpen,
+  Layers,
+  Coins,
+  Filter,
+  Route,
+  ScanEye,
+  BrainCircuit,
+  HeartPulse,
 } from "lucide-react";
 import { lessons, type Lesson } from "../content";
 import type { Progress } from "../progress";
@@ -21,21 +28,35 @@ export function TopicIcon({ lesson }: { lesson: Lesson }) {
     actions: "actions",
     positions: "positions",
     ranges: "starting-hands",
-    preflop: "actions",
-    math: "actions",
   };
-  const asset = assets[lesson.id];
+  const asset = ["preflop", "math"].includes(lesson.id)
+    ? lesson.id + ".svg"
+    : assets[lesson.id]
+      ? assets[lesson.id] + ".png"
+      : undefined;
+  const Icon =
+    (
+      {
+        board: Layers,
+        bets: Coins,
+        postflop: Filter,
+        plan: Route,
+        adjust: ScanEye,
+        advanced: BrainCircuit,
+        mindset: HeartPulse,
+      } as Record<string, typeof BookOpen>
+    )[lesson.id] ?? BookOpen;
   return (
     <span className="topic-icon" aria-hidden="true">
       {asset ? (
         <img
-          src={import.meta.env.BASE_URL + "art/topic-" + asset + ".png"}
+          src={import.meta.env.BASE_URL + "art/topic-" + asset}
           alt=""
           width="48"
           height="48"
         />
       ) : (
-        <BookOpen size={28} strokeWidth={1.6} />
+        <Icon size={28} strokeWidth={1.6} />
       )}
     </span>
   );

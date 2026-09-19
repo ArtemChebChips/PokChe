@@ -56,7 +56,7 @@ test("урок → задачи → разбор → перезагрузка �
   await page.reload();
   await page.getByRole("button", { name: "Мой прогресс", exact: true }).click();
   await expect(page.locator(".stats")).toContainText("5");
-  await expect(page.locator(".progress-card")).toContainText("1/10");
+  await expect(page.locator(".progress-card")).toContainText("1/9");
   await page.getByRole("button", { name: "Повторить ошибки · 1" }).click();
   await expect(
     page.getByRole("heading", { name: "Старшинство карт" }),

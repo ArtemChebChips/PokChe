@@ -1,3 +1,4 @@
+import { ChipArt, chipKind } from "./ChipArt";
 export type PotCalculationState = { before: number; bet: number };
 export function PotCalculation({ before, bet }: PotCalculationState) {
   return (
@@ -9,12 +10,7 @@ export function PotCalculation({ before, bet }: PotCalculationState) {
           ["Ваш колл", bet],
         ].map(([label, value]) => (
           <div key={label}>
-            <img
-              src={import.meta.env.BASE_URL + "art/topic-actions.png"}
-              alt=""
-              width="48"
-              height="48"
-            />
+            <ChipArt kind={chipKind(Number(value))} width={48} height={48} />
             <strong>{value}</strong>
             <span>{label}</span>
           </div>

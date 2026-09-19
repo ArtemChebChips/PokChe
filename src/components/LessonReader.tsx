@@ -10,31 +10,26 @@ import { Suit } from "./Suit";
 import { ArrowLeft, ArrowRight, CheckCircle2, RotateCcw } from "lucide-react";
 import { useState } from "react";
 import type { Lesson } from "../content";
-import type { Progress } from "../progress";
 import { Cards } from "./PlayingCard";
 import { Ivanych } from "./Ivanych";
 
 export function LessonReader({
   lesson,
   step,
-  progress,
   onStep,
   onBack,
   onNextLesson,
   onComplete,
   onTrain,
-  onFormat,
   loading,
 }: {
   lesson: Lesson;
   step: number;
-  progress: Progress;
   onStep: (step: number) => void;
   onBack: () => void;
   onNextLesson?: () => void;
   onComplete: () => void;
   onTrain: () => void;
-  onFormat: (format: Progress["format"]) => void;
   loading: boolean;
 }) {
   const [finished, setFinished] = useState(false);
@@ -206,30 +201,6 @@ export function LessonReader({
             Запомни тройку J → Q → K. Именно эти буквы чаще путают в начале.
           </p>
         </Ivanych>
-      )}
-      {lesson.id === "formats" && last && (
-        <div className="format-picker">
-          <p>Ваше направление</p>
-          <div className="toggle">
-            <button
-              className={progress.format === "cash" ? "active" : ""}
-              onClick={() => onFormat("cash")}
-            >
-              Кэш
-            </button>
-            <button
-              className={progress.format === "tournament" ? "active" : ""}
-              onClick={() => onFormat("tournament")}
-            >
-              Турниры
-            </button>
-          </div>
-          <p className="muted">
-            {progress.format === "cash"
-              ? "Ориентир: 6-max, 100 BB. Сейчас доступны общие навыки."
-              : "Общие навыки доступны сейчас. Турнирная стратегия появится отдельным этапом."}
-          </p>
-        </div>
       )}
       <div className="reader-controls">
         <button

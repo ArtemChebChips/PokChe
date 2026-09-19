@@ -1,3 +1,4 @@
+import { ChipArt, chipKind } from "./ChipArt";
 import { tableSeats, type FlowScene } from "../flowScene";
 import { Card, Cards } from "./PlayingCard";
 const names: Record<string, string> = {
@@ -68,28 +69,22 @@ export function PokerTable({
         >
           <image
             className="table-art"
-            href={art + "poker-table.png"}
-            x="0"
-            y="-55"
-            width="400"
-            height="400"
+            href={art + "table-chips/poker-table-v2.png"}
+            x="20"
+            y="32"
+            width="360"
+            height="225"
             preserveAspectRatio="xMidYMid meet"
           />
           <g
             className="pot-marker"
             aria-label={`Банк: ${scene?.hidePot ? "?" : pot}`}
           >
-            <image
-              href={art + "topic-actions.png"}
-              x="169"
-              y="62"
-              width="28"
-              height="28"
-            />
-            <text x="202" y="75" fill="#123f37" fontSize="10">
+            <ChipArt kind="chips-pot" x={162} y={71} width={35} height={22} />
+            <text x="202" y="75" fill="#fff8df" fontSize="10">
               Банк
             </text>
-            <text x="202" y="91" fill="#123f37" fontWeight="700" fontSize="16">
+            <text x="202" y="91" fill="#fff8df" fontWeight="700" fontSize="16">
               {scene?.hidePot ? "?" : pot}
             </text>
           </g>
@@ -150,12 +145,12 @@ export function PokerTable({
                     data-seat={id}
                     aria-label={`${id}: поставлено ${bet}`}
                   >
-                    <image
-                      href={art + "topic-actions.png"}
+                    <ChipArt
+                      kind={chipKind(bet)}
                       x={bx - 12}
                       y={by - 14}
-                      width="24"
-                      height="24"
+                      width={24}
+                      height={24}
                     />
                     <text
                       x={bx + 16}
@@ -173,24 +168,13 @@ export function PokerTable({
                 )}
                 {id === "BTN" && (
                   <g className="dealer-marker" aria-label="Кнопка дилера">
-                    <circle
-                      cx={dx}
-                      cy={dy}
-                      r="10"
-                      fill="#fffef9"
-                      stroke="#ba9d5a"
-                      strokeWidth="1.5"
+                    <ChipArt
+                      kind="dealer-button"
+                      x={dx - 10}
+                      y={dy - 10}
+                      width={20}
+                      height={20}
                     />
-                    <text
-                      x={dx}
-                      y={dy + 4}
-                      textAnchor="middle"
-                      fontSize="11"
-                      fontWeight="700"
-                      fill="#735f2d"
-                    >
-                      D
-                    </text>
                   </g>
                 )}
               </g>

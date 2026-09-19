@@ -1,3 +1,4 @@
+import { ChipArt } from "./ChipArt";
 import { ChipPile } from "./ChipPile";
 export type StackState = {
   hero: number;
@@ -10,12 +11,7 @@ export function StackExample({ hero, opponent, pot, unit }: StackState) {
     <figure className="stack-example" aria-label="Стеки игроков">
       {pot !== undefined && (
         <div className="stack-bank">
-          <img
-            src={import.meta.env.BASE_URL + "art/topic-actions.png"}
-            width="36"
-            height="36"
-            alt=""
-          />
+          <ChipArt kind="chips-pot" width={42} height={30} />
           <span>
             В банке{" "}
             <strong>

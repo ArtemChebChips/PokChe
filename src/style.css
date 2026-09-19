@@ -2779,16 +2779,19 @@ body {
   font-size: 19px;
 }
 .chip-pile {
-  position: relative;
+  display: grid;
+  place-items: center;
   width: 112px;
   height: 72px;
 }
-.chip-pile img {
-  position: absolute;
-  top: 0;
-  width: 72px;
-  height: 72px;
-  object-fit: contain;
+.chip-art {
+  flex-shrink: 0;
+}
+.formats-guide > p {
+  line-height: 1.65;
+}
+.formats-guide > h2 {
+  margin-top: 26px;
 }
 .stack-example figcaption {
   text-align: center;

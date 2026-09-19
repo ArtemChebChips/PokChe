@@ -66,7 +66,7 @@ test("следующий урок показывает позиции и ули�
   await page
     .getByRole("button", { name: "Открыть: Как идёт раздача", exact: true })
     .click();
-  await expect(page.locator(".position-table svg")).toBeVisible();
+  await expect(page.locator(".position-table .table-layout")).toBeVisible();
   await noOverflow(page);
   await page.screenshot({ path: "test-results/flow-table-320.png" });
   await page.getByRole("button", { name: "Глава 2: Общие карты" }).click();

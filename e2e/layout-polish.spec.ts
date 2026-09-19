@@ -18,14 +18,12 @@ for (const width of [320, 390]) {
         .getByRole("button", { name: "Тренажёры", exact: true })
         .click();
       await page.getByRole("button", { name: /Повторить ошибки/ }).click();
-      const sizes = await page
-        .locator(".table .card")
-        .evaluateAll((els) =>
-          els.map((e) => ({
-            w: e.getBoundingClientRect().width,
-            h: e.getBoundingClientRect().height,
-          })),
-        );
+      const sizes = await page.locator(".table .card").evaluateAll((els) =>
+        els.map((e) => ({
+          w: e.getBoundingClientRect().width,
+          h: e.getBoundingClientRect().height,
+        })),
+      );
       expect(sizes.length).toBeGreaterThanOrEqual(7);
       expect(
         Math.max(...sizes.map((s) => s.w)) - Math.min(...sizes.map((s) => s.w)),
@@ -90,10 +88,21 @@ for (const width of [320, 390]) {
         const board = el.querySelector(".scene-board")!.getBoundingClientRect();
         return [
           ...el.querySelectorAll(
-            ".seat-marker circle, .seat-bet, .pot-marker, .dealer-marker",
+            ".seat-marker circle, .seat-bet > .chip-art, .seat-bet > text, .pot-marker > .chip-art, .pot-marker > text, .dealer-marker > .chip-art",
           ),
         ].every((e) => {
-          const r = e.getBoundingClientRect();
+          // SVG считает невидимые поля PNG в boundingClientRect. Проверяем видимую область viewBox.
+          let r = e.getBoundingClientRect();
+          if (e instanceof SVGSVGElement) {
+            const v = e.viewBox.baseVal,
+              m = e.getScreenCTM()!;
+            const a = new DOMPoint(v.x, v.y).matrixTransform(m);
+            const b = new DOMPoint(
+              v.x + v.width,
+              v.y + v.height,
+            ).matrixTransform(m);
+            r = new DOMRect(a.x, a.y, b.x - a.x, b.y - a.y);
+          }
           return (
             r.right <= board.left ||
             r.left >= board.right ||

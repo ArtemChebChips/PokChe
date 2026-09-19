@@ -62,7 +62,13 @@ export default function App() {
   const [storageBlocked, setStorageBlocked] = useState(!!initial.error);
   const [tab, setTab] = useState<"learn" | "train" | "progress">("learn");
   const [screen, setScreen] = useState<
-    "main" | "lesson" | "session" | "summary" | "settings" | "matrix"
+    | "main"
+    | "lesson"
+    | "session"
+    | "summary"
+    | "settings"
+    | "matrix"
+    | "formats"
   >("main");
   const [lesson, setLesson] = useState<Lesson>(lessons[0]);
   const [step, setStep] = useState(0);
@@ -120,6 +126,9 @@ export default function App() {
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "instant" });
   }, [screen, tab, step, session?.index]);
+  const completedLessons = lessons.filter(
+    (l) => l.ready && progress.lessons.includes(l.id),
+  ).length;
   const solved = progress.attempts.length;
   const today = new Date().toLocaleDateString("sv-SE");
   const mainRef = useRef<HTMLElement>(null);
@@ -489,14 +498,12 @@ export default function App() {
               <div className="section-heading">
                 <h2>Уроки изучены</h2>
                 <strong>
-                  {progress.lessons.length}/
-                  {lessons.filter((l) => l.ready).length}
+                  {completedLessons}/{lessons.filter((l) => l.ready).length}
                 </strong>
               </div>
               <Bar
                 value={
-                  (progress.lessons.length /
-                    lessons.filter((l) => l.ready).length) *
+                  (completedLessons / lessons.filter((l) => l.ready).length) *
                   100
                 }
               />
@@ -554,7 +561,6 @@ export default function App() {
             key={lesson.id}
             lesson={lesson}
             step={step}
-            progress={progress}
             onStep={readStep}
             onBack={back}
             onNextLesson={
@@ -562,7 +568,6 @@ export default function App() {
             }
             onComplete={finishLesson}
             onTrain={() => start(lesson.skills)}
-            onFormat={(format) => setProgress((p) => ({ ...p, format }))}
             loading={loading}
           />
         )}
@@ -880,6 +885,80 @@ export default function App() {
             </div>
           </>
         )}
+        {screen === "formats" && (
+          <article className="formats-guide">
+            <button className="back" onClick={() => setScreen("settings")}>
+              <ArrowLeft size={18} /> Настройки
+            </button>
+            <h1>Кэш и турниры</h1>
+            <p className="lead">
+              Правила раздачи одинаковые. Отличаются ценность фишек,
+              длительность игры и условия победы.
+            </p>
+            <h2>Кэш — игра отдельными раздачами</h2>
+            <p>
+              Вы садитесь за стол с определённой суммой. Фишки соответствуют
+              деньгам: например, 100 фишек по 1 ₽ — это 100 ₽. Блайнды за
+              выбранным столом обычно постоянны. Между раздачами можно закончить
+              игру и забрать стоимость оставшихся фишек.
+            </p>
+            <p>
+              Если стек уменьшился, его можно пополнить в пределах правил стола.
+              Проигрыш всех фишек не означает выбывания из соревнования: в кэше
+              нет общей турнирной дистанции и призовых мест.
+            </p>
+            <h2>Турнир — одна общая дистанция</h2>
+            <p>
+              Участники оплачивают вход — бай-ин — и получают стартовый стек.
+              Турнирные фишки нельзя обменять на деньги напрямую: 10 000 в стеке
+              не означают 10 000 ₽. Призы зависят от занятого места и структуры
+              выплат.
+            </p>
+            <p>
+              Блайнды растут по расписанию, поэтому тот же стек со временем
+              содержит всё меньше больших блайндов. Например, 10 000 фишек при
+              BB 100 — это 100 BB, а при BB 500 — уже 20 BB. Иногда добавляется
+              анте — ещё одна обязательная ставка.
+            </p>
+            <p>
+              Когда фишки заканчиваются, игрок выбывает. Некоторые турниры
+              допускают повторный вход или докупку в оговорённый период. Просто
+              уйти и забрать стоимость своего стека, как в кэше, нельзя.
+            </p>
+            <h2>Что меняется в решениях</h2>
+            <p>
+              Комбинации и порядок действий общие. В кэше сравнивают денежный
+              результат решений. В турнире нужно учитывать ещё стадию, рост
+              блайндов и близость призов: удвоение стека не означает удвоение
+              будущего выигрыша.
+            </p>
+            <section className="info-box">
+              <h2>Что вам интереснее?</h2>
+              <div className="toggle">
+                <button
+                  aria-pressed={progress.format === "cash"}
+                  className={progress.format === "cash" ? "active" : ""}
+                  onClick={() => setProgress((p) => ({ ...p, format: "cash" }))}
+                >
+                  Кэш
+                </button>
+                <button
+                  aria-pressed={progress.format === "tournament"}
+                  className={progress.format === "tournament" ? "active" : ""}
+                  onClick={() =>
+                    setProgress((p) => ({ ...p, format: "tournament" }))
+                  }
+                >
+                  Турниры
+                </button>
+              </div>
+              <p>
+                Выбор сохраняется как ваше предпочтение. Текущие уроки и
+                тренировки дают общую базу и от этого выбора не меняются.
+              </p>
+            </section>
+          </article>
+        )}
         {screen === "settings" && (
           <>
             <button className="back" onClick={back}>
@@ -941,28 +1020,13 @@ export default function App() {
               </p>
             </section>
             <section className="info-box">
-              <h2>Направление</h2>
-              <div className="toggle">
-                <button
-                  className={progress.format === "cash" ? "active" : ""}
-                  onClick={() => setProgress((p) => ({ ...p, format: "cash" }))}
-                >
-                  Кэш
-                </button>
-                <button
-                  className={progress.format === "tournament" ? "active" : ""}
-                  onClick={() =>
-                    setProgress((p) => ({ ...p, format: "tournament" }))
-                  }
-                >
-                  Турниры
-                </button>
-              </div>
-              <p>
-                {progress.format === "cash"
-                  ? "Планируемый профиль: 6-max, 100 BB. Стратегические задачи ждут проверенных условий."
-                  : "Рекомендуем: основы → префлоп и математика → короткие стеки → EV и выплаты → ICM. Турнирные задачи ещё не подключены."}
-              </p>
+              <h2>Об игре</h2>
+              <button
+                className="secondary"
+                onClick={() => setScreen("formats")}
+              >
+                Кэш и турниры: в чём разница <ChevronRight size={18} />
+              </button>
             </section>
             <details className="info-box">
               <summary>Источники и точность</summary>

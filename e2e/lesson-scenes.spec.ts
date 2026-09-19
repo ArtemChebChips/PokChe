@@ -50,7 +50,7 @@ for (const width of [320, 390]) {
       .click();
     await expect(page.locator(".position-table .table-art")).toHaveAttribute(
       "href",
-      /poker-table.png/,
+      /poker-table-v2.png/,
     );
     await page.locator(".position-table").scrollIntoViewIfNeeded();
     await page.screenshot({ path: `test-results/table-${width}.png` });
