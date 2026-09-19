@@ -1,5 +1,5 @@
 import { WelcomeTour } from "./components/WelcomeTour";
-import { tourSteps, needsTour, rememberTour } from "./tour";
+import { tourSteps, needsTour, rememberTour, tourKey } from "./tour";
 import { RangeExample } from "./components/RangeExample";
 import { StackExample } from "./components/StackExample";
 import { PokerTable } from "./components/PokerTable";
@@ -61,6 +61,22 @@ type Session = {
 
 export default function App() {
   const [initial] = useState(loadProgress);
+  const [tourResetNote, setTourResetNote] = useState("");
+  useEffect(() => {
+    const resume = () => {
+      if (document.visibilityState !== "visible") return;
+      try {
+        if (localStorage.getItem(tourKey) !== "pending") return;
+        localStorage.removeItem(tourKey);
+        setTourResetNote("");
+        setTourStep(0);
+      } catch {
+        /* Перезапуск страницы также проверяет отметку экскурсии. */
+      }
+    };
+    document.addEventListener("visibilitychange", resume);
+    return () => document.removeEventListener("visibilitychange", resume);
+  }, []);
   const [tourStep, setTourStep] = useState<number | null>(() =>
     needsTour() ? 0 : null,
   );
@@ -1019,6 +1035,24 @@ export default function App() {
             >
               Экскурсия с Иванычем
             </button>
+            <button
+              className="secondary replay-tour"
+              onClick={() => {
+                try {
+                  localStorage.setItem(tourKey, "pending");
+                  setTourResetNote(
+                    "Готово. Выйдите из приложения и откройте его снова — Иваныч встретит вас. Прогресс сохранён.",
+                  );
+                } catch {
+                  setTourResetNote(
+                    "Не удалось сохранить отметку. Можно запустить экскурсию кнопкой выше.",
+                  );
+                }
+              }}
+            >
+              Показать приветствие при следующем входе
+            </button>
+            {tourResetNote && <p role="status">{tourResetNote}</p>}
             <p className="lead">PokChe · версия 0.1 · личная практика</p>
             <section className="info-box">
               <h2>
