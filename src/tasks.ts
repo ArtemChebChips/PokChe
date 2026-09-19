@@ -1,10 +1,12 @@
+import { combinationTask, combinationSession } from "./combinationTasks";
+import { shuffle, pick } from "./random";
+export { shuffle } from "./random";
 import {
   deck,
   ranks,
   suits,
   evaluate,
   compare,
-  names,
   potOdds,
   spr,
   handLabel,
@@ -16,6 +18,10 @@ import { type Skill, skillNames } from "./content";
 export type CardKind = "figures" | "ace" | "equal" | "numbers";
 export type Task = {
   variant?: CardKind;
+  scenario?: string;
+  revision?: number;
+  solution?: string[];
+  opponentSolution?: string[];
   id: string;
   skill: Skill;
   title: string;
@@ -33,19 +39,12 @@ export type Task = {
   context?: string;
 };
 export const allSkills = Object.keys(skillNames) as Skill[];
-export function shuffle<T>(input: T[]): T[] {
-  const a = [...input];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
-const pick = <T>(a: T[]) => a[Math.floor(Math.random() * a.length)];
 const fmt = (n: number) => Number(n.toFixed(1)).toLocaleString("ru-RU");
 export function generate(skill: Skill): Task {
   if (skill === "cards")
     return cardTask(pick(["figures", "figures", "figures", "ace", "equal"]));
+  if (skill === "combination" || skill === "best" || skill === "winner")
+    return combinationTask(skill);
   const t: Task = {
     id: crypto.randomUUID(),
     skill,
@@ -64,36 +63,7 @@ export function generate(skill: Skill): Task {
       ...shuffle([...new Set(others)].filter((x) => x !== answer)).slice(0, 3),
     ]);
   };
-  if (skill === "combination" || skill === "best") {
-    t.cards = shuffle(deck).slice(0, 7);
-    const result = evaluate(t.cards);
-    t.prompt =
-      skill === "best"
-        ? "Выберите лучшую пятёрку из семи карт."
-        : "Какая лучшая комбинация в этих семи картах?";
-    t.selection = skill === "best";
-    options(result.name, names);
-    t.hint = "Итоговая рука состоит ровно из пяти карт.";
-    t.explanation = `Лучшая комбинация: ${result.name.toLowerCase()}. Учитываются только пять карт; шестая и седьмая не решают исход.`;
-    t.details = `Один из лучших наборов: ${result.best.join(" ")}. Порядок внутри пятёрки не важен.`;
-  } else if (skill === "winner") {
-    const cards = shuffle(deck).slice(0, 9);
-    t.cards = cards.slice(0, 2);
-    t.opponent = cards.slice(2, 4);
-    t.board = cards.slice(4);
-    const a = evaluate([...t.cards, ...t.board]),
-      b = evaluate([...t.opponent, ...t.board]);
-    const c = compare(a.score, b.score);
-    options(c === 0 ? "Делёж" : c > 0 ? "Вы" : "Соперник", [
-      "Вы",
-      "Соперник",
-      "Делёж",
-    ]);
-    t.prompt = "Вскрытие. Кому достанется банк?";
-    t.hint = "Сравните лучшие пятёрки, затем кикеры.";
-    t.explanation = `У вас: ${a.name.toLowerCase()}. У соперника: ${b.name.toLowerCase()}. ${c === 0 ? "Лучшие пятёрки равны — банк делится." : "При равной категории сравниваются достоинства и кикеры по порядку."}`;
-    t.details = `Ваша пятёрка: ${a.best.join(" ")}. Соперник: ${b.best.join(" ")}.`;
-  } else if (skill === "order") {
+  if (skill === "order") {
     const pre = Math.random() < 0.5;
     const order = pre ? preflopOrder : postflopOrder;
     const index = Math.floor(Math.random() * 5);
@@ -285,11 +255,36 @@ export function generateSession(skills: Skill[], count: number): Task[] {
       cardTask("ace"),
       cardTask(pick(["equal", "numbers"])),
     ]);
+  if (
+    count === 5 &&
+    skills.every((s) => s === "combination" || s === "best" || s === "winner")
+  ) {
+    if (skills.length === 1)
+      return combinationSession(skills[0] as "combination" | "best" | "winner");
+    if (
+      skills.includes("combination") &&
+      skills.includes("best") &&
+      skills.includes("winner")
+    )
+      return shuffle([
+        combinationTask("combination", "wheel"),
+        combinationTask("combination", "flush"),
+        combinationTask("best", "two-trips"),
+        combinationTask("best", "three-pairs"),
+        combinationTask("winner", Math.random() < 0.5 ? "kicker" : "board-tie"),
+      ]);
+  }
   return Array.from({ length: count }, (_, i) =>
     generate(skills[i % skills.length]),
   );
 }
 export function generateSimilar(task: Task): Task {
+  if (
+    task.skill === "combination" ||
+    task.skill === "best" ||
+    task.skill === "winner"
+  )
+    return combinationTask(task.skill, task.scenario);
   if (task.skill !== "cards") return generate(task.skill);
   const next = cardTask(
     task.variant ?? "figures",

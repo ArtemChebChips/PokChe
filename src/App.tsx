@@ -1,3 +1,4 @@
+import { HandExample } from "./components/HandExample";
 import { CorrectBurst } from "./components/CorrectBurst";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -35,7 +36,7 @@ import { glossary } from "./glossary";
 import { Home } from "./components/Home";
 import { Card, Cards } from "./components/PlayingCard";
 import { LessonReader } from "./components/LessonReader";
-import { Sava } from "./components/Sava";
+import { Ivanych } from "./components/Ivanych";
 import { Logo } from "./components/Logo";
 
 function Bar({ value }: { value: number }) {
@@ -265,6 +266,9 @@ export default function App() {
       count: 5,
     });
   }
+  const nextLesson = lessons
+    .slice(lessons.findIndex((l) => l.id === lesson.id) + 1)
+    .find((l) => l.ready);
   function finishLesson() {
     setProgress((p) => ({
       ...p,
@@ -551,6 +555,9 @@ export default function App() {
             progress={progress}
             onStep={readStep}
             onBack={back}
+            onNextLesson={
+              nextLesson ? () => openLesson(nextLesson, true) : undefined
+            }
             onComplete={finishLesson}
             onTrain={() => start(lesson.skills)}
             onFormat={(format) => setProgress((p) => ({ ...p, format }))}
@@ -677,9 +684,9 @@ export default function App() {
                   <Lightbulb size={17} /> Нужна подсказка
                 </button>
                 {hint && (
-                  <Sava pose="thinking">
+                  <Ivanych pose="thinking">
                     <p>{task.hint}</p>
-                  </Sava>
+                  </Ivanych>
                 )}
                 <button
                   className="primary"
@@ -710,6 +717,22 @@ export default function App() {
                     {task.explanation.charAt(0).toUpperCase() +
                       task.explanation.slice(1)}
                   </p>
+                  {task.solution && (
+                    <HandExample
+                      label={
+                        task.opponent
+                          ? "Ваша лучшая пятёрка"
+                          : "Одна из лучших пятёрок"
+                      }
+                      cards={task.solution}
+                    />
+                  )}
+                  {task.opponentSolution && (
+                    <HandExample
+                      label="Пятёрка соперника"
+                      cards={task.opponentSolution}
+                    />
+                  )}
                   {task.details && (
                     <details>
                       <summary>Подробнее о проверке</summary>
@@ -749,6 +772,11 @@ export default function App() {
         {screen === "summary" && session && (
           <section className="summary">
             <h1>Практика завершена</h1>
+            {session.results.length >= 3 && (
+              <Ivanych pose="cheers">
+                <p>За хорошие решения. Спешку оставим соперникам.</p>
+              </Ivanych>
+            )}
             <div className="big-result">
               {session.results.filter(Boolean).length}
               <span> / {session.results.length}</span>

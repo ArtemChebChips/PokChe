@@ -2228,3 +2228,216 @@ p {
     width: calc(100% - 145px);
   }
 }
+
+/* Одна вертикальная область прокрутки: декоративные элементы не расширяют экран. */
+html,
+body,
+#root {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+.app {
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+main {
+  min-width: 0;
+  overflow-x: hidden;
+  overscroll-behavior-x: none;
+  touch-action: pan-y pinch-zoom;
+}
+.lesson-scroll {
+  overflow-x: hidden;
+  touch-action: pan-y pinch-zoom;
+}
+.feedback {
+  overflow: clip;
+}
+.correct-burst {
+  contain: layout;
+}
+.reader .example {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  border-radius: 0;
+  padding: 0;
+  margin: 26px 0;
+}
+.reader .example > .cards {
+  gap: 16px;
+  margin: 0 0 20px;
+}
+.reader .example > .cards > .card {
+  width: 80px;
+  height: 112px;
+}
+.reader .card-index {
+  font-size: 17px;
+}
+.reader .rank-labels {
+  gap: 16px;
+}
+.reader .rank-labels span {
+  width: 80px;
+  font-size: 14px;
+}
+.reader .rank-ladder > .cards {
+  gap: 12px 6px;
+}
+.reader .rank-ladder > .cards > .card {
+  width: 100%;
+  max-width: 62px;
+  height: auto;
+  aspect-ratio: 5/7;
+}
+.reader .rank-ladder .card-index {
+  font-size: 13px;
+}
+.reader .example > p {
+  font-size: 15px;
+  line-height: 1.65;
+}
+.lesson-complete > .secondary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.sava-name {
+  line-height: 1.4;
+}
+@media (max-width: 360px) {
+  .reader .example > .cards {
+    gap: 12px;
+  }
+  .reader .example > .cards > .card {
+    width: 76px;
+    height: 106px;
+  }
+  .reader .rank-labels {
+    gap: 12px;
+  }
+  .reader .rank-labels span {
+    width: 76px;
+  }
+  .reader .rank-ladder > .cards {
+    gap: 12px 5px;
+  }
+  .reader .rank-ladder > .cards > .card {
+    width: 100%;
+    height: auto;
+  }
+  .reader .rank-ladder .card-index {
+    font-size: 12px;
+  }
+}
+
+.lesson-section-picker {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--muted);
+  margin: 16px 0;
+}
+.lesson-section-picker select {
+  min-width: 0;
+  flex: 1;
+  min-height: 44px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--paper);
+  padding: 8px;
+  color: var(--green);
+  font: inherit;
+  font-size: 13px;
+}
+.hand-example {
+  margin: 22px 0;
+}
+.hand-example figcaption {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: #536f60;
+}
+.teaching-hand {
+  display: grid;
+  gap: 8px;
+  justify-content: center;
+  justify-items: center;
+}
+.teaching-hand.five {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+.teaching-hand.seven {
+  grid-template-columns: repeat(4, minmax(0, 64px));
+}
+.teaching-hand.few {
+  display: flex;
+  flex-wrap: wrap;
+}
+.teaching-hand > span {
+  display: block;
+  width: 100%;
+  max-width: 64px;
+}
+.teaching-hand.few > span {
+  width: 64px;
+}
+.reader .teaching-hand .card,
+.teaching-hand .card {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 5/7;
+  max-width: 64px;
+}
+.reader .teaching-hand .card-index,
+.teaching-hand .card-index {
+  font-size: 14px;
+}
+.key-card .card {
+  outline: 2px solid #b99b4e;
+  outline-offset: 2px;
+}
+.unused-card .card {
+  opacity: 0.45;
+}
+.ranking-list {
+  list-style: none;
+  padding: 0;
+  margin: 18px 0;
+}
+.ranking-list li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 15px;
+}
+.ranking-list li > span {
+  font-size: 12px;
+  color: var(--muted);
+  width: 20px;
+}
+@media (max-width: 360px) {
+  .teaching-hand {
+    gap: 6px;
+  }
+  .reader .teaching-hand .card-index,
+  .teaching-hand .card-index {
+    font-size: 12px;
+  }
+}
+
+.sava-panel {
+  overflow: clip;
+}
+body {
+  position: fixed;
+  inset: 0;
+}

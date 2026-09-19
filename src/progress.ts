@@ -68,6 +68,16 @@ function validTask(t: Task): boolean {
   } catch {
     return false;
   }
+  for (const solution of [t.solution, t.opponentSolution]) {
+    if (solution !== undefined) {
+      if (!Array.isArray(solution) || solution.length !== 5) return false;
+      try {
+        validate(solution, 5, 5);
+      } catch {
+        return false;
+      }
+    }
+  }
   if (t.selection && (t.skill !== "best" || t.cards?.length !== 7))
     return false;
   return true;

@@ -340,7 +340,7 @@ test("свободная практика продолжается после п
     ),
   ).toBe(7);
 });
-test("урок 0: понятные подписи, крупный Сава и вся лестница из 13 карт", async ({
+test("урок 0: понятные подписи, крупный Иваныч и вся лестница из 13 карт", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
@@ -390,4 +390,91 @@ test("урок 0: понятные подписи, крупный Сава и в
     .getByRole("button", { name: "Закончить тренировку", exact: true })
     .click();
   await expect(page.locator(".big-result")).toContainText("/ 1");
+});
+
+test("следующий урок: комбинации с примерами и наглядным разбором", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto(process.env.E2E_PATH || "/");
+  await page.getByRole("button", { name: "Начать урок", exact: true }).click();
+  for (let i = 0; i < 4; i++)
+    await page.getByRole("button", { name: "Далее", exact: true }).click();
+  await page.getByRole("button", { name: "Завершить чтение" }).click();
+  await expect(
+    page.getByText(
+      "Можно порешать задачи на эту тему или перейти к следующему уроку.",
+      { exact: true },
+    ),
+  ).toBeVisible();
+  await page
+    .getByRole("button", { name: "Следующий урок", exact: true })
+    .click();
+  await expect(
+    page.getByRole("heading", { name: "Сравниваем пять карт" }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Далее", exact: true }).click();
+  await expect(page.locator(".teaching-hand .card")).toHaveCount(5);
+  await page.getByLabel("Раздел урока").selectOption("Лучшая пятёрка");
+  await expect(
+    page.getByRole("heading", { name: "Туз в младшем стрите" }),
+  ).toBeVisible();
+  await page.screenshot({ path: "test-results/combination-wheel.png" });
+  await page.getByRole("button", { name: "Далее", exact: true }).click();
+  await expect(page.locator(".key-card")).toHaveCount(5);
+  await page.screenshot({ path: "test-results/combination-two-trips.png" });
+  await page.getByLabel("Раздел урока").selectOption("Кикеры и делёж");
+  await page.getByRole("button", { name: "Далее", exact: true }).click();
+  await page.getByRole("button", { name: "Далее", exact: true }).click();
+  await page.getByRole("button", { name: "Завершить чтение" }).click();
+  await page
+    .getByRole("button", { name: "Тренироваться", exact: true })
+    .click();
+  await expect(page.locator(".task-title")).toBeVisible();
+  if (await page.locator(".select-cards").count()) {
+    for (let i = 0; i < 5; i++)
+      await page.locator(".select-cards button").nth(i).click();
+  } else await page.locator(".choices button").first().click();
+  await page.getByRole("button", { name: "Проверить ответ" }).click();
+  await expect(page.locator(".feedback .teaching-hand").first()).toBeVisible();
+});
+test("прокрутка тренировки не смещает экран по горизонтали", async ({
+  page,
+}) => {
+  for (const width of [320, 390]) {
+    await page.setViewportSize({ width, height: 568 });
+    await page.goto(process.env.E2E_PATH || "/");
+    await page.getByRole("button", { name: "Тренажёры", exact: true }).click();
+    await page.getByRole("button", { name: /01 Старшинство карт/ }).click();
+    await page.getByRole("button", { name: "Нужна подсказка" }).click();
+    await expect(page.getByText("Иваныч:", { exact: true })).toBeVisible();
+    const noOverflow = () =>
+      page.evaluate(() =>
+        [
+          document.documentElement,
+          document.body,
+          document.querySelector("main")!,
+        ].every((e) => e.scrollWidth <= e.clientWidth + 1),
+      );
+    expect(await noOverflow()).toBe(true);
+    await page.locator("main").hover();
+    await page.mouse.wheel(120, 400);
+    expect(await page.locator("main").evaluate((e) => e.scrollLeft)).toBe(0);
+    const cards = await page
+      .locator(".table .card")
+      .evaluateAll((els) => els.map((e) => e.getAttribute("data-card")!));
+    const r = "23456789TJQKA",
+      d = r.indexOf(cards[0][0]) - r.indexOf(cards[1][0]);
+    await page
+      .getByRole("button", {
+        name: d === 0 ? "Равны" : d > 0 ? "Левая" : "Правая",
+        exact: true,
+      })
+      .click();
+    await page.getByRole("button", { name: "Проверить ответ" }).click();
+    expect(await noOverflow()).toBe(true);
+    await page.locator("main").hover();
+    await page.mouse.wheel(-120, 300);
+    expect(await page.locator("main").evaluate((e) => e.scrollLeft)).toBe(0);
+  }
 });

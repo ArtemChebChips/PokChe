@@ -1,10 +1,12 @@
+import { names } from "../poker";
+import { HandExample } from "./HandExample";
 import { Suit } from "./Suit";
 import { ArrowLeft, ArrowRight, CheckCircle2, RotateCcw } from "lucide-react";
 import { useState } from "react";
 import type { Lesson } from "../content";
 import type { Progress } from "../progress";
 import { Cards } from "./PlayingCard";
-import { Sava } from "./Sava";
+import { Ivanych } from "./Ivanych";
 
 export function LessonReader({
   lesson,
@@ -12,6 +14,7 @@ export function LessonReader({
   progress,
   onStep,
   onBack,
+  onNextLesson,
   onComplete,
   onTrain,
   onFormat,
@@ -22,12 +25,18 @@ export function LessonReader({
   progress: Progress;
   onStep: (step: number) => void;
   onBack: () => void;
+  onNextLesson?: () => void;
   onComplete: () => void;
   onTrain: () => void;
   onFormat: (format: Progress["format"]) => void;
   loading: boolean;
 }) {
   const [finished, setFinished] = useState(false);
+  const sections = [
+    ...new Set(
+      lesson.slides.map((s) => s.section).filter((s): s is string => !!s),
+    ),
+  ];
   const slide = lesson.slides[step],
     last = step === lesson.slides.length - 1;
   if (finished)
@@ -38,7 +47,7 @@ export function LessonReader({
         <p>{lesson.title}</p>
         <p>
           {lesson.skills.length
-            ? "Переходи к практике: можно решить одну задачу или продолжать дальше."
+            ? "Можно порешать задачи на эту тему или перейти к следующему уроку."
             : "К этому уроку всегда можно вернуться."}
         </p>
 
@@ -48,7 +57,13 @@ export function LessonReader({
             <ArrowRight size={18} />
           </button>
         )}
-        <button className="secondary" onClick={onBack}>
+        {onNextLesson && (
+          <button className="secondary" onClick={onNextLesson}>
+            Следующий урок
+            <ArrowRight size={18} />
+          </button>
+        )}
+        <button className="text-button" onClick={onBack}>
           К списку уроков
         </button>
         <button
@@ -83,6 +98,24 @@ export function LessonReader({
       <span className="eyebrow reader-topic">
         {lesson.num} · {lesson.title}
       </span>
+      {sections.length > 0 && (
+        <label className="lesson-section-picker">
+          Раздел
+          <select
+            aria-label="Раздел урока"
+            value={slide.section}
+            onChange={(e) =>
+              onStep(
+                lesson.slides.findIndex((s) => s.section === e.target.value),
+              )
+            }
+          >
+            {sections.map((s) => (
+              <option key={s}>{s}</option>
+            ))}
+          </select>
+        </label>
+      )}
       <h1>{slide.title}</h1>
       <p className="lesson-text">{slide.text}</p>
       <div
@@ -92,6 +125,19 @@ export function LessonReader({
         }
       >
         {slide.cards && <Cards cards={slide.cards} />}
+        {slide.hands?.map((h, i) => (
+          <HandExample key={i} {...h} />
+        ))}
+        {slide.ranking && (
+          <ol className="ranking-list">
+            {names.map((n, i) => (
+              <li key={n}>
+                <span>{i + 1}</span>
+                {n}
+              </li>
+            ))}
+          </ol>
+        )}
         {lesson.id === "cards" && step === 0 && (
           <div className="suit-guide">
             {[
@@ -116,15 +162,19 @@ export function LessonReader({
             <span>Король</span>
           </div>
         )}
-        <p>{slide.example}</p>
+        {slide.example && <p>{slide.example}</p>}
       </div>
+      {slide.coach && (
+        <Ivanych pose="explain" advice>
+          <p>{slide.coach}</p>
+        </Ivanych>
+      )}
       {lesson.id === "cards" && step === 2 && (
-        <Sava pose="explain">
+        <Ivanych pose="explain" advice>
           <p>
-            Совет: запомни тройку J → Q → K. Именно эти буквы чаще путают в
-            начале.
+            Запомни тройку J → Q → K. Именно эти буквы чаще путают в начале.
           </p>
-        </Sava>
+        </Ivanych>
       )}
       {lesson.id === "formats" && last && (
         <div className="format-picker">

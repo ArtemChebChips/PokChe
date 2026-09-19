@@ -1,12 +1,14 @@
 import type { ReactNode } from "react";
-export type SavaPose =
-  "welcome" | "explain" | "thinking" | "try-again" | "celebrate";
-export function Sava({
+export type IvanychPose =
+  "welcome" | "explain" | "thinking" | "try-again" | "celebrate" | "cheers";
+export function Ivanych({
   pose,
   children,
+  advice = false,
 }: {
-  pose: SavaPose;
+  pose: IvanychPose;
   children: ReactNode;
+  advice?: boolean;
 }) {
   return (
     <aside className="sava-panel">
@@ -17,7 +19,9 @@ export function Sava({
         alt=""
       />
       <div className="sava-copy">
-        <span className="sava-name">Сава</span>
+        <span className="sava-name">
+          {advice ? "Иваныч советует:" : "Иваныч:"}
+        </span>
         {children}
       </div>
     </aside>
