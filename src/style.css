@@ -2460,41 +2460,135 @@ body {
 .ranking-list li > span {
   padding-top: 2px;
 }
+
+/* Компактная реплика с картами слева, персонаж отдельным слоем справа. */
 .sava-panel.sava-wide {
-  padding: 132px 0 0;
-  margin-top: 25px;
+  padding: 0;
+  margin: 22px 0;
+  min-height: 0;
 }
 .sava-wide > img {
-  top: 0;
-  bottom: auto;
-  right: -16px;
-  width: 210px;
+  width: 150px;
   height: 210px;
-  pointer-events: none;
+  right: -22px;
+  bottom: 42px;
+  top: auto;
 }
 .sava-wide .sava-copy {
-  width: 100%;
+  width: calc(100% - 106px);
   box-sizing: border-box;
-  padding: 22px 14px 14px;
+  padding: 12px;
 }
 .sava-wide .sava-name {
   display: block;
-  max-width: 45%;
-  min-height: 46px;
+  min-height: 0;
+  max-width: none;
+}
+.sava-wide .sava-copy p {
+  font-size: 14px;
+  line-height: 1.45;
 }
 .sava-wide .hand-example {
-  margin: 18px 0;
+  margin: 14px 0;
 }
-.two-players {
+.sava-wide .hand-example figcaption {
+  font-size: 12px;
+  margin-bottom: 8px;
+}
+.sava-wide .teaching-hand.five {
+  display: flex;
+  gap: 0;
+  justify-content: flex-start;
+}
+.sava-wide .teaching-hand.five > span {
+  width: auto;
+  flex: 1;
+  min-width: 0;
+  max-width: none;
+}
+.sava-wide .teaching-hand.five > span:last-child {
+  flex: 0 0 44px;
+}
+.reader .sava-wide .teaching-hand.five .card {
+  width: 44px;
+  max-width: none;
+}
+.sava-wide .two-players {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 14px;
+  gap: 10px;
 }
-.two-players .teaching-hand {
-  gap: 6px;
+.sava-wide .two-players .hand-example {
+  margin: 0 0 10px;
 }
-.two-players .teaching-hand > span {
-  width: min(44%, 64px);
+.sava-wide .two-players .teaching-hand {
+  display: flex;
+  gap: 0;
+}
+.sava-wide .two-players .teaching-hand > span {
+  flex: 1;
+  width: auto;
+  min-width: 0;
+}
+.sava-wide .two-players .teaching-hand > span:last-child {
+  flex: 0 0 40px;
+}
+.reader .sava-wide .two-players .card {
+  width: 40px;
+  max-width: none;
+}
+.reader .sava-wide .card-index {
+  font-size: 13px;
+}
+.sava-wide .sava-copy:after {
+  display: block;
+  top: auto;
+  bottom: 110px;
+}
+@media (max-width: 360px) {
+  .sava-wide .sava-copy {
+    width: calc(100% - 88px);
+    padding: 10px;
+  }
+  .sava-wide > img {
+    width: 125px;
+    right: -24px;
+  }
+}
+.chapter-tabs .chapter {
+  position: relative;
+  padding-top: 36px;
+}
+.chapter-tabs .chapter > button {
+  position: absolute;
+  top: -8px;
+  transform: translateX(-50%);
+  width: 44px;
+  height: 44px;
+  border-radius: 0;
+  padding: 0;
+  background: transparent;
+}
+.chapter-tabs .chapter-number {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 26px;
+  border-radius: 8px 8px 0 0;
+  font-size: 13px;
+  font-weight: 600;
+  background: #e9f2ec;
+}
+.chapter-tabs .chapter > button[aria-current="step"] .chapter-number {
+  background: #c7e4d5;
+  color: var(--green);
+}
+.chapter-tabs .chapter .reader-steps {
+  margin: 0;
 }
 
 .table .board-cards {
@@ -2553,7 +2647,4 @@ body {
   place-items: center;
   color: #6c8978;
   font-size: 10px;
-}
-.sava-wide .sava-copy:after {
-  display: none;
 }

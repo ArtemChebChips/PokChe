@@ -1,3 +1,4 @@
+import { combinationSlides } from "../src/combinationLesson";
 import { it, expect } from "vitest";
 import solver from "pokersolver";
 import { rankingExamples, flushComparison } from "../src/rankingExamples";
@@ -75,4 +76,20 @@ it("практика хода раздачи покрывает этапы и д
   expect(batch).toContain("preflop");
   expect(batch).toContain("postflop");
   expect(batch).toContain("street");
+});
+
+it("фулл-хаусы на одной доске сначала сравниваются по тройке, затем по паре", () => {
+  const hands = combinationSlides.find((s) => s.title === "Фулл-хаус")!.hands!;
+  const [board, hero, opponent] = hands.map((h) => h.cards);
+  validate([...board, ...hero, ...opponent]);
+  const a = solver.Hand.solve([...board, ...hero]),
+    b = solver.Hand.solve([...board, ...opponent]);
+  expect(evaluate([...board, ...hero]).score.slice(0, 3)).toEqual([6, 10, 14]);
+  expect(evaluate([...board, ...opponent]).score.slice(0, 3)).toEqual([
+    6, 11, 10,
+  ]);
+  expect(solver.Hand.winners([a, b])).toEqual([b]);
+  const c = solver.Hand.solve(["Ts", "Th", "Td", "As", "Ac"]),
+    d = solver.Hand.solve(["Ts", "Th", "Td", "Ks", "Kc"]);
+  expect(solver.Hand.winners([c, d])).toEqual([c]);
 });

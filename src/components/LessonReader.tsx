@@ -90,7 +90,13 @@ export function LessonReader({
           {step + 1} / {lesson.slides.length}
         </span>
       </div>
-      <nav className="chapter-progress" aria-label="Главы урока">
+      <nav
+        className={
+          "chapter-progress" +
+          (lesson.id === "combinations" ? " chapter-tabs" : "")
+        }
+        aria-label="Главы урока"
+      >
         {(sections.length ? sections : [""]).map((section, chapter) => {
           const indices = lesson.slides
             .map((s, i) => (!sections.length || s.section === section ? i : -1))
@@ -105,9 +111,16 @@ export function LessonReader({
                 <button
                   aria-label={"Глава " + (chapter + 1) + ": " + section}
                   aria-current={slide.section === section ? "step" : undefined}
+                  style={
+                    lesson.id === "combinations"
+                      ? {
+                          left: `calc((100% - ${(indices.length - 1) * 3}px) / ${indices.length * 2})`,
+                        }
+                      : undefined
+                  }
                   onClick={() => onStep(indices[0])}
                 >
-                  {chapter + 1}
+                  <span className="chapter-number">{chapter + 1}</span>
                 </button>
               )}
               <div
