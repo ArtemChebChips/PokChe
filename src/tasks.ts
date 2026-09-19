@@ -1,3 +1,9 @@
+import {
+  boardTask,
+  boardFamilies,
+  targetedEquityTask,
+  drawCases,
+} from "./boardTasks";
 import { preflopTask, preflopSession } from "./preflopTasks";
 import { oddsTask, oddsFamilies } from "./mathTasks";
 import type { StackState } from "./components/StackExample";
@@ -6,16 +12,7 @@ import { handFlowTask, handFlowSession } from "./handFlowTasks";
 import { combinationTask, combinationSession } from "./combinationTasks";
 import { shuffle, pick } from "./random";
 export { shuffle } from "./random";
-import {
-  deck,
-  ranks,
-  suits,
-  evaluate,
-  compare,
-  spr,
-  handLabel,
-  equity,
-} from "./poker";
+import { deck, ranks, suits, evaluate, compare, spr, handLabel } from "./poker";
 import { type Skill, skillNames } from "./content";
 export type CardKind = "figures" | "ace" | "equal" | "numbers";
 export type Task = {
@@ -45,6 +42,8 @@ export type Task = {
 export const allSkills = Object.keys(skillNames) as Skill[];
 const fmt = (n: number) => Number(n.toFixed(1)).toLocaleString("ru-RU");
 export function generate(skill: Skill): Task {
+  if (skill === "texture") return boardTask();
+  if (skill === "equity") return targetedEquityTask();
   if (skill === "cards")
     return cardTask(pick(["figures", "figures", "figures", "ace", "equal"]));
   if (skill === "combination" || skill === "best" || skill === "winner")
@@ -128,59 +127,6 @@ export function generate(skill: Skill): Task {
       t.hint =
         "Посмотрите на достоинства и последнюю букву. У пары суффикса нет.";
     }
-  } else if (skill === "texture") {
-    const draw = Math.random() < 0.4;
-    if (draw) {
-      const s = pick([...suits]);
-      t.cards = ["A" + s, "J" + s];
-      t.board = [
-        "8" + s,
-        "3" + s,
-        "2" + pick([...suits].filter((x) => x !== s)),
-      ];
-      t.prompt = "Какое дро есть у вашей руки на флопе?";
-      options("Флеш-дро", [
-        "Готовый флеш",
-        "Двустороннее стрит-дро",
-        "Нет дро",
-      ]);
-      t.hint = "Сколько карт одной масти среди ваших карт и доски?";
-      t.explanation =
-        "Четыре карты одной масти — флеш-дро. Ещё одна даст флеш, но не гарантирует победу против любой руки.";
-    } else {
-      t.board = shuffle(deck).slice(0, 3);
-      const distinct = new Set(t.board.map((c) => c[1])).size;
-      options(
-        distinct === 3
-          ? "Радужный"
-          : distinct === 2
-            ? "Двухмастный"
-            : "Монотонный",
-        ["Радужный", "Двухмастный", "Монотонный"],
-      );
-      t.prompt = "Какой это флоп по мастям?";
-      t.hint = "Посчитайте разные масти, не достоинства.";
-      t.explanation = `Разных мастей: ${distinct}. Радужный — три, двухмастный — две, монотонный — одна.`;
-    }
-  } else {
-    const cards = shuffle(deck).slice(0, 8);
-    t.cards = cards.slice(0, 2);
-    t.opponent = cards.slice(2, 4);
-    t.board = cards.slice(4);
-    const result = equity(t.cards, t.opponent, t.board);
-    t.context = "Тёрн · конкретная рука соперника · до вскрытия";
-    t.prompt = "Оцените вашу долю банка — эквити. Выберите ближайшее значение.";
-    const answer = Math.round(result.percent / 10) * 10;
-    options(
-      answer + "%",
-      [answer - 20, answer - 10, answer + 10, answer + 20, 0, 50, 100]
-        .filter((n) => n >= 0 && n <= 100)
-        .map((n) => n + "%"),
-    );
-    t.hint =
-      "Учитывайте победы и половину каждого дележа. Рука соперника известна.";
-    t.explanation = `Точное эквити: ${fmt(result.percent)}%. Ближайшая оценка: ${answer}%. Побед: ${result.wins}, ничьих: ${result.ties}, всего риверов: ${result.total}.`;
-    t.details = `Полный перебор всех ${result.total} оставшихся карт без симуляции. (${result.wins} + ${result.ties} ÷ 2) ÷ ${result.total} × 100. Это доля банка, а не рекомендация действия.`;
   }
   return t;
 }
@@ -252,6 +198,14 @@ export function cardTask(kind: CardKind, pair?: string[]): Task {
 export function generateSession(skills: Skill[], count: number): Task[] {
   if (!skills.length || !Number.isInteger(count) || count < 1 || count > 20)
     throw Error("Invalid session");
+  if (skills.length === 1 && skills[0] === "texture")
+    return shuffle(boardFamilies)
+      .slice(0, count)
+      .map((f) => boardTask(f));
+  if (skills.length === 1 && skills[0] === "equity")
+    return shuffle([...drawCases])
+      .slice(0, count)
+      .map((c) => targetedEquityTask(c.id));
   if (skills.length === 1 && skills[0] === "preflop" && count === 5)
     return preflopSession();
   if (skills.length === 1 && skills[0] === "odds" && count === 5)
@@ -292,6 +246,8 @@ export function generateSession(skills: Skill[], count: number): Task[] {
   );
 }
 export function generateSimilar(task: Task): Task {
+  if (task.skill === "texture") return boardTask(task.scenario);
+  if (task.skill === "equity") return targetedEquityTask(task.scenario);
   if (task.skill === "preflop") return preflopTask(task.scenario);
   if (task.skill === "odds") return oddsTask(task.scenario);
   if (task.skill === "order") return handFlowTask(task.scenario);
