@@ -240,14 +240,18 @@ export function generateSession(skills: Skill[], count: number): Task[] {
       modelTask(skill, families[i % families.length]),
     );
   }
-  if (skills.length === 1 && skills[0] === "texture")
+  if (skills.length === 1 && skills[0] === "texture") {
+    const families = shuffle(boardFamilies);
     return Array.from({ length: count }, (_, i) =>
-      boardTask(boardFamilies[i % boardFamilies.length]),
+      boardTask(families[i % families.length]),
     );
-  if (skills.length === 1 && skills[0] === "equity")
+  }
+  if (skills.length === 1 && skills[0] === "equity") {
+    const cases = shuffle(drawCases);
     return Array.from({ length: count }, (_, i) =>
-      targetedEquityTask(drawCases[i % drawCases.length].id),
+      targetedEquityTask(cases[i % cases.length].id),
     );
+  }
   if (skills.length === 1 && skills[0] === "preflop" && count === 5)
     return preflopSession();
   if (skills.length === 1 && skills[0] === "odds" && count === 5)

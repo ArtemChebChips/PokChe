@@ -50,6 +50,7 @@ function Bar({ value }: { value: number }) {
   );
 }
 type Session = {
+  skills: Skill[];
   tasks: Task[];
   index: number;
   results: boolean[];
@@ -170,7 +171,7 @@ export default function App() {
     if (review) {
       const tasks = progress.mistakes;
       if (!tasks.length) return;
-      setSession({ tasks, index: 0, results: [], review: true });
+      setSession({ tasks, skills: [], index: 0, results: [], review: true });
       setScreen("session");
       return;
     }
@@ -189,6 +190,7 @@ export default function App() {
       }
       setSession({
         tasks: event.data.tasks,
+        skills,
         index: 0,
         results: [],
         review: false,
@@ -281,7 +283,7 @@ export default function App() {
       setError("Не удалось загрузить следующую задачу.");
     };
     w.postMessage({
-      skills: [...new Set(session.tasks.map((t) => t.skill))],
+      skills: shuffle(session.skills),
       count: 5,
     });
   }

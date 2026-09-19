@@ -1,7 +1,15 @@
 import { test, expect } from "@playwright/test";
 import { lessons } from "../src/content";
 const root = process.env.E2E_PATH || "/";
-for (const id of ["board", "bets", "postflop", "plan", "adjust", "advanced"])
+for (const id of [
+  "board",
+  "bets",
+  "postflop",
+  "plan",
+  "adjust",
+  "advanced",
+  "mindset",
+])
   for (const width of [320, 390])
     test(`урок ${id} и практика на ${width}`, async ({ page }) => {
       await page.setViewportSize({ width, height: 740 });
@@ -19,7 +27,7 @@ for (const id of ["board", "bets", "postflop", "plan", "adjust", "advanced"])
             .locator("main")
             .evaluate((e) => e.scrollWidth <= e.clientWidth + 1),
         ).toBe(true);
-        if (i === 10)
+        if (i === 10 || (id === "mindset" && i === 7))
           await page.screenshot({
             path: `test-results/lesson-${id}-${width}.png`,
           });
@@ -29,6 +37,15 @@ for (const id of ["board", "bets", "postflop", "plan", "adjust", "advanced"])
             exact: true,
           })
           .click();
+      }
+      if (!l.skills.length) {
+        await expect(
+          page.getByRole("heading", { name: "Урок пройден" }),
+        ).toBeVisible();
+        await expect(
+          page.getByRole("button", { name: "Тренироваться", exact: true }),
+        ).toHaveCount(0);
+        return;
       }
       await page
         .getByRole("button", { name: "Тренироваться", exact: true })
@@ -40,3 +57,4 @@ for (const id of ["board", "bets", "postflop", "plan", "adjust", "advanced"])
         .click();
       await expect(page.getByRole("status").last()).toBeVisible();
     });
+

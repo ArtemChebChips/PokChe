@@ -40,6 +40,6 @@ for i,(p,b,w) in enumerate(inputs):
     coarse=solve(p,b,w,1e-7);strict=solve(p,b,w,1e-9)
     assert max(abs(coarse[k]-strict[k]) for k in coarse)<1e-7
     rows.append(dict(id=f'river-{i+1}',pot=p,bet=b,valueWeight=w,board=['Qs','8h','3c','2d','9s'],valueHand=['As','Ah'],bluffHand=['Jh','6h'],defenderHand=['Kc','Kd'],**strict))
-output=dict(version=1,model='Heads-up river; value always beats bluff catcher, bluff always loses; attacker check/bet, defender fold/call; no rake or raises; range is explicitly synthetic.',solver='SciPy '+scipy.__version__+' / HiGHS dual linear programs',scriptSha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),tolerances=[1e-7,1e-9],scenarios=rows)
+output=dict(version=1,model='Heads-up river; value always beats bluff catcher, bluff always loses; attacker check/bet, defender fold/call; no rake or raises; range is explicitly synthetic.',solver='SciPy '+scipy.__version__+' / HiGHS dual linear programs',scriptSha256=hashlib.sha256(Path(__file__).read_text(encoding='utf-8').replace('\r\n','\n').encode('utf-8')).hexdigest(),tolerances=[1e-7,1e-9],scenarios=rows)
 path=root/'src/data/river-models.json';path.parent.mkdir(exist_ok=True);path.write_text(json.dumps(output,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
 print('Verified 5 river games: primal/dual gap < 1e-7, tighter solve stable, analytic frequencies match.')

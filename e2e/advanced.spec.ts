@@ -107,3 +107,44 @@ test("равноценные действия принимаются в офла
   await expect(page.getByRole("status").last()).toContainText("Верно");
   await expect(page.locator(".choices button.correct")).toHaveCount(2);
 });
+
+test("смешанная практика сохраняет все навыки после первой подборки", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    const Original = window.Worker;
+    (window as any).trainingMessages = [];
+    window.Worker = class extends Original {
+      postMessage(message: any, options?: any) {
+        (window as any).trainingMessages.push(message);
+        super.postMessage(message, options);
+      }
+    };
+  });
+  await page.goto(root);
+  await page.getByRole("button", { name: "Тренажёры", exact: true }).click();
+  await page.getByRole("button", { name: /Смешанная тренировка/ }).click();
+  for (let i = 0; i < 12; i++) {
+    await expect(
+      page.getByRole("button", { name: "Проверить ответ", exact: true }),
+    ).toBeVisible();
+    if (await page.locator(".select-cards button").count()) {
+      for (let j = 0; j < 5; j++)
+        await page.locator(".select-cards button").nth(j).click();
+    } else await page.locator(".choices button").first().click();
+    await page
+      .getByRole("button", { name: "Проверить ответ", exact: true })
+      .click();
+    await page
+      .getByRole("button", { name: /^Следующ(ая задача|ее решение)$/ })
+      .click();
+    if (await page.evaluate(() => (window as any).trainingMessages.length >= 2))
+      break;
+  }
+  const messages = await page.evaluate(() => (window as any).trainingMessages);
+  expect(messages.length).toBeGreaterThanOrEqual(2);
+  expect(messages[1].skills.slice().sort()).toEqual(
+    messages[0].skills.slice().sort(),
+  );
+  expect(messages[1].skills.length).toBe(17);
+});

@@ -2,7 +2,7 @@
   "version": 1,
   "model": "Heads-up river; value always beats bluff catcher, bluff always loses; attacker check/bet, defender fold/call; no rake or raises; range is explicitly synthetic.",
   "solver": "SciPy 1.16.2 / HiGHS dual linear programs",
-  "scriptSha256": "a6c87a1b4468383679df56e5ac66dff6dbbd33e2774c81915b89503a392e78f0",
+  "scriptSha256": "0af16600c8ddf54b94bdf3fa047f49f2802ea5bad9001790f5f153eeed699782",
   "tolerances": [
     1e-07,
     1e-09
