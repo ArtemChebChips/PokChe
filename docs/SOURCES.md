@@ -45,3 +45,6 @@
 ## Установка PWA
 
 Указания сверены с [Apple](https://support.apple.com/guide/iphone/open-as-web-app-iphea86e5236/ios) и [Google Chrome](https://support.google.com/chrome/answer/9658361?co=GENIE.Platform%3DAndroid&hl=en). Реализованы standalone-манифест, PNG-иконки, apple-touch-icon и service worker. Автоматический install prompt на iPhone не используется; установка через меню Safari.
+
+## Уроки 05/06 — проверка 19 сентября 2026
+Правила полного минимального повышения сверены с https://www.pokerstars.com/poker/games/texas-holdem/ ; определение 3-бета — https://www.pokerstars.com/poker/learn/lesson/3-betting/ ; формула цены колла — https://www.pokerstars.com/poker/learn/lesson/pot-odds/ . Тексты и сцены написаны самостоятельно, стратегия из статей не импортируется. Пример эквити As Ah против Ks Kh на 2c 7d 9h Js независимо проверяется pokersolver на всех 44 риверах. Оценка колла по EV даётся только в модели один на один, без комиссии и будущих ставок, с эквити, явно заданным условием.

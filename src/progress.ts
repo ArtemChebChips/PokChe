@@ -35,6 +35,7 @@ const skills = [
   "order",
   "stack",
   "notation",
+  "preflop",
   "odds",
   "spr",
   "texture",

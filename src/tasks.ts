@@ -1,3 +1,5 @@
+import { preflopTask, preflopSession } from "./preflopTasks";
+import { oddsTask, oddsFamilies } from "./mathTasks";
 import type { StackState } from "./components/StackExample";
 import type { FlowScene } from "./flowScene";
 import { handFlowTask, handFlowSession } from "./handFlowTasks";
@@ -10,7 +12,6 @@ import {
   suits,
   evaluate,
   compare,
-  potOdds,
   spr,
   handLabel,
   equity,
@@ -49,6 +50,8 @@ export function generate(skill: Skill): Task {
   if (skill === "combination" || skill === "best" || skill === "winner")
     return combinationTask(skill);
   if (skill === "order") return handFlowTask();
+  if (skill === "preflop") return preflopTask();
+  if (skill === "odds") return oddsTask();
   const t: Task = {
     id: crypto.randomUUID(),
     skill,
@@ -125,19 +128,6 @@ export function generate(skill: Skill): Task {
       t.hint =
         "Посмотрите на достоинства и последнюю букву. У пары суффикса нет.";
     }
-  } else if (skill === "odds") {
-    const original = pick([10, 20, 30, 40, 60]),
-      bet = pick([5, 10, 15, 20, 30]),
-      pot = original + bet,
-      answer = potOdds(pot, bet);
-    t.context = "Один на один · олл-ин · без комиссии";
-    t.prompt = `В банке было ${original} BB. Соперник поставил олл-ин ${bet} BB. Вам нужно добавить ${bet} BB для колла. Какой порог эквити?`;
-    options(
-      fmt(answer) + "%",
-      [10, 20, 25, 33.3, 40, 50, (bet / pot) * 100].map((x) => fmt(x) + "%"),
-    );
-    t.hint = "В знаменателе — банк после вашего колла.";
-    t.explanation = `${bet} ÷ (${original} + ${bet} + ${bet}) × 100 = ${fmt(answer)}%. При таком эквити EV колла равен нулю, выше — положителен. Будущих ставок нет.`;
   } else if (skill === "texture") {
     const draw = Math.random() < 0.4;
     if (draw) {
@@ -262,6 +252,10 @@ export function cardTask(kind: CardKind, pair?: string[]): Task {
 export function generateSession(skills: Skill[], count: number): Task[] {
   if (!skills.length || !Number.isInteger(count) || count < 1 || count > 20)
     throw Error("Invalid session");
+  if (skills.length === 1 && skills[0] === "preflop" && count === 5)
+    return preflopSession();
+  if (skills.length === 1 && skills[0] === "odds" && count === 5)
+    return shuffle([...oddsFamilies.map((f) => oddsTask(f)), oddsTask()]);
   if (skills.length === 1 && skills[0] === "order" && count === 5)
     return handFlowSession();
   if (skills.length === 1 && skills[0] === "cards" && count === 5)
@@ -298,6 +292,8 @@ export function generateSession(skills: Skill[], count: number): Task[] {
   );
 }
 export function generateSimilar(task: Task): Task {
+  if (task.skill === "preflop") return preflopTask(task.scenario);
+  if (task.skill === "odds") return oddsTask(task.scenario);
   if (task.skill === "order") return handFlowTask(task.scenario);
   if (
     task.skill === "combination" ||

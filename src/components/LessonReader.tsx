@@ -1,3 +1,4 @@
+import { PotCalculation } from "./PotCalculation";
 import { LessonMatrix } from "./LessonMatrix";
 import { StackExample } from "./StackExample";
 import { PokerTable } from "./PokerTable";
@@ -147,8 +148,10 @@ export function LessonReader({
           (lesson.id === "cards" && step === 4 ? "rank-ladder" : "")
         }
       >
+        {slide.potCalculation && <PotCalculation {...slide.potCalculation} />}
         {slide.matrix && <LessonMatrix key={step} initial={slide.matrix} />}
         {slide.stacks && <StackExample {...slide.stacks} />}
+        {slide.scene && <PokerTable scene={slide.scene} />}
         {slide.tablePosition && <PokerTable position={slide.tablePosition} />}
         {slide.street !== undefined && <StreetCards count={slide.street} />}
         {slide.cards && <Cards cards={slide.cards} />}

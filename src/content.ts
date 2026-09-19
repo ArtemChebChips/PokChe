@@ -1,3 +1,6 @@
+import { preflopSlides } from "./preflopLesson";
+import { mathSlides } from "./mathLesson";
+import type { PotCalculationState } from "./components/PotCalculation";
 import type { FlowScene } from "./flowScene";
 import { startingHandsSlides } from "./startingHandsLesson";
 import { stackSlides } from "./stackLesson";
@@ -9,6 +12,7 @@ export type Skill =
   | "combination"
   | "best"
   | "winner"
+  | "preflop"
   | "order"
   | "stack"
   | "notation"
@@ -17,6 +21,7 @@ export type Skill =
   | "texture"
   | "equity";
 export type Slide = {
+  potCalculation?: PotCalculationState;
   scene?: FlowScene;
   stacks?: StackState;
   matrix?: string;
@@ -59,6 +64,7 @@ export const skillNames: Record<Skill, string> = {
   order: "Ход раздачи",
   stack: "Эффективный стек",
   notation: "Обозначения рук",
+  preflop: "Решения на префлопе",
   odds: "Шансы банка",
   spr: "Считай SPR",
   texture: "Доска и дро",
@@ -208,10 +214,10 @@ export const lessons: Lesson[] = [
     id: "preflop",
     num: "05",
     title: "Решения на префлопе",
-    subtitle: "Открытия, 3-беты и защита блайндов",
-    skills: [],
-    slides: [],
-    ready: false,
+    subtitle: "Открытие, 3-бет и цена продолжения",
+    skills: ["preflop"],
+    slides: preflopSlides,
+    ready: true,
   },
   {
     id: "math",
@@ -220,35 +226,7 @@ export const lessons: Lesson[] = [
     subtitle: "Шансы банка, эквити и цена колла",
     skills: ["odds", "equity"],
     ready: true,
-    slides: [
-      slide(
-        "Цена продолжения",
-        "Шансы банка в процентах = сумма колла ÷ банк после вашего колла. В текущий банк уже входит ставка соперника. Комиссию в этих учебных задачах считаем нулевой.",
-        "До ставки 40 BB, соперник ставит 20. Колл 20 в итоговый банк 80: 25%.",
-        "Банк уже 60 BB, колл 20 BB. Порог эквити?",
-        ["25%", "33%", "50%"],
-        "25%",
-        "20 ÷ (60 + 20) = 25%.",
-      ),
-      slide(
-        "Эквити — доля банка",
-        "Эквити учитывает и победы, и делёж. Один на один: (победы + половина ничьих) ÷ все равновероятные исходы. В тренажёре рука соперника задана точно.",
-        "На тёрне известны 8 карт: 2 ваши, 2 соперника и 4 на доске. Проверяем все 44 ривера.",
-        "Если вы делите банк всегда, эквити равно…",
-        ["50%", "100%", "0%"],
-        "50%",
-        "При каждом исходе вам принадлежит половина банка.",
-      ),
-      slide(
-        "Когда сравнивать с ценой колла",
-        "При олл-ине один на один, без комиссии и будущих решений, колл не хуже фолда, если эквити не ниже порога. На обычном флопе этого недостаточно: ещё будут ставки.",
-        "EV колла = эквити × итоговый банк − сумма колла; при дележах используем долю банка.",
-        "Гарантирует ли эквити выше порога выгодный колл с будущими ставками?",
-        ["Нет", "Да"],
-        "Нет",
-        "Будущие ставки, реализация эквити и диапазоны меняют результат. Эквити не заменяет стратегию.",
-      ),
-    ],
+    slides: mathSlides,
   },
   {
     id: "board",

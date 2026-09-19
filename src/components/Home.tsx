@@ -21,6 +21,8 @@ export function TopicIcon({ lesson }: { lesson: Lesson }) {
     actions: "actions",
     positions: "positions",
     ranges: "starting-hands",
+    preflop: "actions",
+    math: "actions",
   };
   const asset = assets[lesson.id];
   return (

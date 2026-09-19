@@ -2872,3 +2872,36 @@ main.main-content {
   font-size: 13px;
   line-height: 1.5;
 }
+
+.pot-calculation {
+  margin: 18px 0;
+  padding: 16px 10px;
+  background: #e6f0e9;
+  border-radius: 18px;
+}
+.pot-calculation > div {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.pot-calculation > div > div {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  text-align: center;
+  gap: 4px;
+}
+.pot-calculation strong {
+  font-size: 20px;
+}
+.pot-calculation span {
+  font-size: 11px;
+  line-height: 1.4;
+}
+.pot-calculation figcaption {
+  text-align: center;
+  font-size: 14px;
+  border-top: 1px solid #c9dcce;
+  margin-top: 14px;
+  padding-top: 14px;
+}
