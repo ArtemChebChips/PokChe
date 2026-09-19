@@ -8,14 +8,32 @@ const names: Record<string, string> = {
   SB: "Малый блайнд",
   BB: "Большой блайнд",
 };
-const locations = [
-  [94, 30],
-  [266, 30],
-  [315, 166],
-  [266, 302],
-  [94, 302],
-  [45, 166],
+// Общие координаты мест, ставок и дилера: ни одна метка места не закрывает сукно.
+const seats = [
+  [136, 25],
+  [264, 25],
+  [375, 145],
+  [264, 265],
+  [136, 265],
+  [25, 145],
 ];
+const betsAt = [
+  [125, 80],
+  [275, 80],
+  [317, 181],
+  [255, 184],
+  [145, 184],
+  [83, 181],
+];
+const dealerAt = [
+  [157, 64],
+  [297, 65],
+  [334, 107],
+  [281, 195],
+  [113, 195],
+  [66, 107],
+];
+const art = import.meta.env.BASE_URL + "art/";
 export function PokerTable({
   position = "",
   scene,
@@ -30,11 +48,12 @@ export function PokerTable({
       : position === "postflop"
         ? "SB"
         : position);
-  // Место пользователя всегда снизу справа; порядок по часовой стрелке сохраняется.
   const offset = scene ? (tableSeats.indexOf(scene.hero) - 3 + 6) % 6 : 0;
-  const pot = scene
-    ? scene.previousPot + Object.values(scene.bets).reduce((a, b) => a + b, 0)
-    : 0;
+  const bets = scene?.bets ?? (position === "postflop" ? {} : { SB: 1, BB: 2 });
+  const previousPot = scene?.previousPot ?? (position === "postflop" ? 12 : 0);
+  const pot = previousPot + Object.values(bets).reduce((a, b) => a + b, 0);
+  const board =
+    scene?.board ?? (position === "postflop" ? ["Qh", "8c", "3s"] : []);
   return (
     <figure className={"position-table" + (scene ? " situation-table" : "")}>
       {scene && (
@@ -42,151 +61,132 @@ export function PokerTable({
       )}
       <div className="table-surface">
         <svg
-          viewBox="0 0 360 338"
+          className="table-layout"
+          viewBox="0 0 400 290"
           role="img"
-          aria-label={
-            scene
-              ? `Стол. Вы на ${scene.hero}. Банк со ставками: ${scene.hidePot ? "нужно посчитать" : pot + " фишек"}.`
-              : "Стол на шесть игроков. По часовой стрелке: UTG, HJ, CO, BTN, SB, BB."
-          }
+          aria-label={`Стол на шесть игроков. Банк: ${scene?.hidePot ? "нужно посчитать" : pot + " фишек"}.`}
         >
           <image
-            href={import.meta.env.BASE_URL + "art/poker-table.png"}
-            x="16"
-            y="14"
-            width="328"
-            height="310"
+            className="table-art"
+            href={art + "poker-table.png"}
+            x="0"
+            y="-55"
+            width="400"
+            height="400"
             preserveAspectRatio="xMidYMid meet"
           />
-          {!scene && (
-            <text
-              x="180"
-              y="172"
-              textAnchor="middle"
-              fill="#103e42"
-              fontSize="13"
-              fontWeight="700"
-            >
-              По часовой стрелке ↻
+          <g
+            className="pot-marker"
+            aria-label={`Банк: ${scene?.hidePot ? "?" : pot}`}
+          >
+            <image
+              href={art + "topic-actions.png"}
+              x="169"
+              y="62"
+              width="28"
+              height="28"
+            />
+            <text x="202" y="75" fill="#123f37" fontSize="10">
+              Банк
             </text>
-          )}
-          {scene && (
-            <g>
-              <rect
-                x="113"
-                y="113"
-                width="134"
-                height="35"
-                rx="12"
-                fill="#fff9ec"
-              />
-              <text
-                x="180"
-                y="128"
-                textAnchor="middle"
-                fill="#244e3c"
-                fontSize="10"
-              >
-                Банк со ставками
-              </text>
-              <text
-                x="180"
-                y="142"
-                textAnchor="middle"
-                fill="#244e3c"
-                fontSize="13"
-                fontWeight="700"
-              >
-                {scene.hidePot ? "?" : pot + " фишек"}
-              </text>
-            </g>
-          )}
-          {locations.map(([x, y], i) => {
+            <text x="202" y="91" fill="#123f37" fontWeight="700" fontSize="16">
+              {scene?.hidePot ? "?" : pot}
+            </text>
+          </g>
+          {seats.map(([x, y], i) => {
             const id = tableSeats[(i + offset) % 6],
-              hero = scene?.hero === id;
-            const folded = scene?.folded.includes(id);
+              hero = scene?.hero === id,
+              folded = scene?.folded.includes(id);
             const selected =
               id === active ||
               (active === "blinds" && ["SB", "BB"].includes(id));
-            const bet = scene?.bets[id] ?? 0;
+            const dark = !folded && (selected || hero);
+            const [bx, by] = betsAt[i],
+              [dx, dy] = dealerAt[i];
+            const bet = bets[id] ?? 0;
             return (
               <g key={id}>
-                <rect
-                  x={x - 43}
-                  y={y - 22}
-                  width="86"
-                  height="44"
-                  rx="12"
-                  fill={selected || hero ? "#226e58" : "#fffef9"}
-                  stroke={hero ? "#b99b4e" : "#93b7a4"}
-                  strokeWidth={hero ? 2 : 1}
-                />
-                <text
-                  x={x}
-                  y={y - 4}
-                  textAnchor="middle"
-                  fontSize="14"
-                  fontWeight="700"
-                  fill={selected || hero ? "white" : "#244e3c"}
+                <g
+                  className="seat-marker"
+                  data-seat={id}
+                  data-folded={folded || undefined}
                 >
-                  {hero ? "Вы · " : ""}
-                  {id}
-                </text>
-                <text
-                  x={x}
-                  y={y + 11}
-                  textAnchor="middle"
-                  fontSize="9"
-                  fill={selected || hero ? "white" : "#244e3c"}
-                >
-                  {folded ? "Пас" : names[id]}
-                </text>
-                {scene && bet > 0 && (
-                  <g
-                    transform={`translate(${x < 70 ? x + 62 : x > 290 ? x - 62 : x} ${y < 100 ? y + 41 : y > 250 ? y - 41 : y + 55})`}
+                  <title>
+                    {names[id]}
+                    {hero ? " · вы" : ""}
+                    {folded ? " · пас" : " · в игре"}
+                  </title>
+                  <circle
+                    cx={x}
+                    cy={y}
+                    r="23"
+                    fill={folded ? "#e8eae3" : dark ? "#226e58" : "#fffef9"}
+                    stroke={hero ? "#b99b4e" : folded ? "#cad1c9" : "#8bb19b"}
+                    strokeWidth={hero ? 2.5 : 1.3}
+                  />
+                  <text
+                    x={x}
+                    y={y - 1}
+                    textAnchor="middle"
+                    fontSize="13"
+                    fontWeight="700"
+                    fill={dark ? "white" : folded ? "#7a857d" : "#244e3c"}
                   >
-                    <rect
-                      x="-21"
-                      y="-10"
-                      width="42"
-                      height="20"
-                      rx="10"
-                      fill="#fff9ec"
-                      stroke="#b99b4e"
-                    />
-                    <circle
-                      cx="-12"
-                      cy="0"
-                      r="5"
-                      fill="#d6b35f"
-                      stroke="#947734"
+                    {id}
+                  </text>
+                  <text
+                    x={x}
+                    y={y + 12}
+                    textAnchor="middle"
+                    fontSize="8"
+                    fill={dark ? "white" : "#687b6d"}
+                  >
+                    {folded ? "пас" : hero ? "вы" : "в игре"}
+                  </text>
+                </g>
+                {bet > 0 && (
+                  <g
+                    className="seat-bet"
+                    data-seat={id}
+                    aria-label={`${id}: поставлено ${bet}`}
+                  >
+                    <image
+                      href={art + "topic-actions.png"}
+                      x={bx - 12}
+                      y={by - 14}
+                      width="24"
+                      height="24"
                     />
                     <text
-                      x="5"
-                      y="4"
-                      textAnchor="middle"
-                      fontSize="11"
+                      x={bx + 16}
+                      y={by + 4}
+                      fill="#173e32"
+                      stroke="#fff9ec"
+                      strokeWidth="3"
+                      paintOrder="stroke"
                       fontWeight="700"
-                      fill="#244e3c"
+                      fontSize="13"
                     >
                       {bet}
                     </text>
                   </g>
                 )}
                 {id === "BTN" && (
-                  <g>
+                  <g className="dealer-marker" aria-label="Кнопка дилера">
                     <circle
-                      cx={x + 37}
-                      cy={y - 23}
+                      cx={dx}
+                      cy={dy}
                       r="10"
                       fill="#fffef9"
                       stroke="#ba9d5a"
+                      strokeWidth="1.5"
                     />
                     <text
-                      x={x + 37}
-                      y={y - 19}
+                      x={dx}
+                      y={dy + 4}
                       textAnchor="middle"
                       fontSize="11"
+                      fontWeight="700"
                       fill="#735f2d"
                     >
                       D
@@ -197,16 +197,26 @@ export function PokerTable({
             );
           })}
         </svg>
-        {scene && (
-          <div className="scene-board">
-            {scene.board.length ? (
-              scene.board.map((c) => <Card key={c} card={c} />)
-            ) : (
-              <span>Общих карт пока нет</span>
-            )}
+        {board.length > 0 && (
+          <div className="scene-board" aria-label="Общие карты">
+            {board.map((c) => (
+              <Card key={c} card={c} />
+            ))}
           </div>
         )}
       </div>
+      {!scene && (
+        <figcaption className="seat-caption">
+          {active === "blinds"
+            ? "SB — малый блайнд · BB — большой блайнд"
+            : `${active} — ${names[active] ?? ""}`}
+          <span>
+            {position === "postflop"
+              ? "Все шестеро в игре · ставки префлопа уже в банке"
+              : "Блайнды 1 / 2 · все шестеро в игре"}
+          </span>
+        </figcaption>
+      )}
       {scene && (
         <>
           <div className="scene-hands">
@@ -222,16 +232,15 @@ export function PokerTable({
               }
             >
               <span>
-                Ваши карты · {scene.hero}
+                Вы · {scene.hero}
                 {scene.folded.includes(scene.hero) ? " · пас" : ""}
               </span>
               <Cards cards={scene.cards} />
             </div>
           </div>
-          <p className="scene-note">
-            Числа у мест — поставлено на текущем круге. Банк включает эти
-            ставки.
-          </p>
+          <figcaption className="scene-note">
+            Суммы в фишках · банк включает ставки на столе
+          </figcaption>
         </>
       )}
     </figure>

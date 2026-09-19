@@ -104,6 +104,27 @@ export function generate(skill: Skill): Task {
     ]);
     t.hint = "s — одна масть, o — разные. У пары суффикса нет.";
     t.explanation = `${label}: ${label.length === 2 ? "карманная пара" : label.endsWith("s") ? "одномастная рука (suited)" : "разномастная рука (offsuit)"}. Старшее достоинство пишется первым.`;
+    if (Math.random() < 0.4) {
+      t.cards = undefined;
+      t.prompt = "Что означает запись " + label + "?";
+      const kind =
+        label.length === 2
+          ? "Карманная пара"
+          : label.endsWith("s")
+            ? "Две карты одной масти"
+            : "Две карты разных мастей";
+      options(
+        kind,
+        [
+          "Карманная пара",
+          "Две карты одной масти",
+          "Две карты разных мастей",
+          "Готовый флеш",
+        ].filter((v) => v !== kind),
+      );
+      t.hint =
+        "Посмотрите на достоинства и последнюю букву. У пары суффикса нет.";
+    }
   } else if (skill === "odds") {
     const original = pick([10, 20, 30, 40, 60]),
       bet = pick([5, 10, 15, 20, 30]),

@@ -1,3 +1,4 @@
+import { ChipPile } from "./ChipPile";
 export type StackState = {
   hero: number;
   opponent: number;
@@ -5,33 +6,39 @@ export type StackState = {
   unit: string;
 };
 export function StackExample({ hero, opponent, pot, unit }: StackState) {
-  const max = Math.max(hero, opponent, 1);
   return (
     <figure className="stack-example" aria-label="Стеки игроков">
-      {[
-        ["Вы", hero],
-        ["Соперник", opponent],
-      ].map(([label, value]) => (
-        <div key={label} className="stack-row">
-          <div>
+      {pot !== undefined && (
+        <div className="stack-bank">
+          <img
+            src={import.meta.env.BASE_URL + "art/topic-actions.png"}
+            width="36"
+            height="36"
+            alt=""
+          />
+          <span>
+            В банке{" "}
+            <strong>
+              {pot} {unit}
+            </strong>
+          </span>
+        </div>
+      )}
+      <div className="stack-players">
+        {[
+          ["Вы", hero],
+          ["Соперник", opponent],
+        ].map(([label, value]) => (
+          <div className="stack-player" key={label}>
             <span>{label}</span>
+            <ChipPile amount={Number(value)} />
             <strong>
               {value} {unit}
             </strong>
           </div>
-          <div className="stack-track">
-            <span style={{ width: `${(Number(value) / max) * 100}%` }} />
-          </div>
-        </div>
-      ))}
-      {pot !== undefined && (
-        <figcaption>
-          В банке ·{" "}
-          <strong>
-            {pot} {unit}
-          </strong>
-        </figcaption>
-      )}
+        ))}
+      </div>
+      <figcaption>Перед игроками — оставшиеся стеки</figcaption>
     </figure>
   );
 }

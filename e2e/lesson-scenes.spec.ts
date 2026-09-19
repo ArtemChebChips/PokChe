@@ -48,7 +48,7 @@ for (const width of [320, 390]) {
     await page
       .getByRole("button", { name: "Открыть: Как идёт раздача", exact: true })
       .click();
-    await expect(page.locator(".position-table image")).toHaveAttribute(
+    await expect(page.locator(".position-table .table-art")).toHaveAttribute(
       "href",
       /poker-table.png/,
     );

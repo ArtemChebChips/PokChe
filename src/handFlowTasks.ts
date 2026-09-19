@@ -27,7 +27,7 @@ export function handFlowTask(family = pick(flowFamilies)): Task {
     skill: "order",
     title: "Ход раздачи",
     scenario: family,
-    revision: 4,
+    revision: 5,
     prompt: "",
     choices: [],
     answer: "",
@@ -52,54 +52,81 @@ export function handFlowTask(family = pick(flowFamilies)): Task {
   if (family === "preflop" || family === "postflop") {
     const pre = family === "preflop",
       order = pre ? preflopOrder : postflopOrder;
-    const index = Math.floor(Math.random() * 6) - 1;
-    scene.street = pre
-      ? "Префлоп · очередь действий"
-      : "Флоп · очередь действий";
+    const skipped = pick([1, 2, 3]);
+    scene.folded = order.slice(0, skipped);
+    scene.hero = "BTN";
+    scene.street = pre ? "Префлоп" : "Флоп · начало торгов";
     scene.board = pre ? [] : ["Qh", "8c", "3s"];
     scene.bets = pre ? { SB: 1, BB: 2 } : {};
     scene.previousPot = pre ? 0 : 12;
-    t.context = "6-max · все шесть игроков в раздаче, никто не в олл-ине";
-    t.prompt =
-      (pre ? "Префлоп" : "Флоп") +
-      ": " +
-      (index < 0
-        ? "кто действует первым?"
-        : "кто действует сразу после " +
-          labels[order[index]] +
-          " в первом круге решений?");
+    t.context = "Серые места — пас · остальные игроки могут действовать";
+    t.prompt = pre
+      ? scene.folded.join(", ") + " сделали пас. Кто действует следующим?"
+      : "Начинаются торги на флопе. " +
+        scene.folded.join(", ") +
+        " вышли из раздачи на префлопе. Кто действует первым?";
     options(
-      labels[order[index + 1]],
-      shuffle(order.filter((p) => p !== order[index + 1]))
+      labels[order[skipped]],
+      order
+        .filter((p) => p !== order[skipped])
         .slice(0, 3)
         .map((p) => labels[p]),
     );
     t.explanation =
-      "Очередь: " +
-      order.map((p) => labels[p]).join(" → ") +
-      ". После повышения уже ходившие игроки тоже могут получить ход снова.";
+      "Пропускаем игроков в пасе. Первый оставшийся в очереди — " +
+      labels[order[skipped]] +
+      ". Полный порядок: " +
+      order.join(" → ") +
+      ".";
     t.hint = pre
-      ? "Найдите большой блайнд. Первый ход — у следующего места по часовой стрелке."
-      : "На флопе очередь начинается слева от баттона. Выбывших и игроков в олл-ине пропускают.";
+      ? "После большого блайнда ищите первого игрока, который ещё не сделал пас."
+      : "На новой улице начинаем слева от баттона и пропускаем тех, кто выбыл.";
   } else if (family === "street") {
-    const [street, count] = pick([
-      ["Префлоп", 0],
-      ["Флоп", 3],
-      ["Тёрн", 4],
-      ["Ривер", 5],
-    ] as const);
-    scene.street = street;
-    scene.board = ["Qh", "8c", "3s", "Kd", "2h"].slice(0, count);
-    scene.bets = count ? {} : { SB: 1, BB: 2 };
-    scene.previousPot = count ? 12 : 0;
-    t.prompt = street + ": сколько общих карт уже открыто?";
-    options(String(count), ["0", "3", "4", "5"]);
-    t.explanation =
-      "Префлоп — 0 общих карт, флоп — 3, тёрн — 4, ривер — 5. Личные карты в это число не входят.";
-    t.hint = "Вспомните порядок открытия: сначала три вместе, затем по одной.";
+    const variant = pick(["sequence", "flop-checks", "river-checks"]);
+    scene.hero = "BTN";
+    if (variant === "sequence") {
+      scene.street = "Порядок улиц";
+      t.prompt =
+        "Ставки уравнивают на каждом круге, в игре остаются двое. В каком порядке проходят улицы?";
+      options("Префлоп → флоп → тёрн → ривер", [
+        "Префлоп → тёрн → флоп → ривер",
+        "Флоп → префлоп → тёрн → ривер",
+        "Префлоп → флоп → ривер → тёрн",
+      ]);
+      t.explanation =
+        "Сначала префлоп с личными картами, затем флоп из трёх общих, тёрн — четвёртая и ривер — пятая. Между улицами проходят торги.";
+    } else {
+      const river = variant === "river-checks";
+      scene.street = river
+        ? "Ривер · оба сделали чек"
+        : "Флоп · оба сделали чек";
+      scene.board = ["Qh", "8c", "3s", "Kd", "2h"].slice(0, river ? 5 : 3);
+      scene.folded = ["UTG", "HJ", "CO", "SB"];
+      scene.bets = {};
+      scene.previousPot = 12;
+      t.prompt =
+        "В раздаче вы на BTN и соперник на BB. Оба сделали чек. Что происходит дальше?";
+      options(
+        river
+          ? "Вскрытие: сравниваем лучшие пятёрки"
+          : "Открывается тёрн; первым действует BB",
+        [
+          river
+            ? "Открывается ещё одна общая карта"
+            : "Открывается тёрн; первым действует BTN",
+          "Нужно сразу начинать новую раздачу",
+          river ? "Первым забирает банк BTN" : "Сразу открываются тёрн и ривер",
+        ],
+      );
+      t.explanation = river
+        ? "После завершения торгов на ривере общих карт больше не открывают. Оставшиеся игроки сравнивают лучшие пятёрки."
+        : "Все сделали чек, значит круг завершён. Открывают одну карту тёрна, затем снова торги: BB действует раньше BTN.";
+    }
+    t.hint =
+      "Сначала проверьте, завершены ли торги. Затем вспомните следующую улицу и очередь на ней.";
   } else if (family === "call" || family === "raise") {
     const blind = pick([2, 4, 6]),
-      target = blind * 3,
+      target = blind * pick([2, 3, 4]),
       minimum = target + (target - blind);
     scene.bets = { SB: blind / 2, BB: blind, UTG: target };
     scene.folded = ["HJ", "CO", "BTN", "SB"];
@@ -141,7 +168,14 @@ export function handFlowTask(family = pick(flowFamilies)): Task {
     t.prompt = facing
       ? "На флопе соперник поставил 6 фишек. Вы ещё не ставили. Можно ли сделать чек?"
       : "На флопе перед вами все сделали чек. Можно ли тоже сделать чек?";
-    options(facing ? "Нет" : "Да", ["Да", "Нет"]);
+    t.prompt = facing
+      ? "На флопе BB поставил 6, вы ещё не ставили. Какие действия вам доступны при достаточном стеке?"
+      : "На флопе BB сделал чек. Какие действия доступны вам на BTN?";
+    options(facing ? "Колл, рейз или пас" : "Чек или первая ставка", [
+      facing ? "Чек или первая ставка" : "Обязательный колл",
+      "Только рейз",
+      "Нужно открыть следующую карту",
+    ]);
     t.explanation = facing
       ? "Есть неуравненная ставка. Можно сбросить, уравнять или допустимо повысить. Чек недоступен."
       : "Нет ставки к уравниванию. Чек передаёт ход без вложения фишек.";
@@ -196,13 +230,13 @@ export function handFlowTask(family = pick(flowFamilies)): Task {
     scene.bets = { SB: 1, BB: 2, UTG: 6 };
     scene.street = "Префлоп · вы сделали пас";
     t.prompt =
-      "Вы сделали фолд. Что происходит с фишками, которые вы уже поставили?";
+      "Вы сделали пас (fold). Что происходит с фишками, которые вы уже поставили?";
     options("Остаются в банке", [
       "Возвращаются в ваш стек",
       "Возвращается только блайнд",
     ]);
     t.explanation =
-      "Фолд прекращает ваше участие в раздаче. Уже поставленные фишки остаются в банке.";
+      "Пас прекращает ваше участие в раздаче. Уже поставленные фишки остаются в банке.";
     t.hint = "Сброс карт не отменяет предыдущие ставки.";
   } else {
     const small = pick([1, 2, 5]),

@@ -1,3 +1,4 @@
+import { LessonMatrix } from "./LessonMatrix";
 import { StackExample } from "./StackExample";
 import { PokerTable } from "./PokerTable";
 import { StreetCards } from "./StreetCards";
@@ -93,8 +94,7 @@ export function LessonReader({
       </div>
       <nav
         className={
-          "chapter-progress" +
-          (lesson.id === "combinations" ? " chapter-tabs" : "")
+          "chapter-progress" + (sections.length > 0 ? " chapter-tabs" : "")
         }
         aria-label="Главы урока"
       >
@@ -113,7 +113,7 @@ export function LessonReader({
                   aria-label={"Глава " + (chapter + 1) + ": " + section}
                   aria-current={slide.section === section ? "step" : undefined}
                   style={
-                    lesson.id === "combinations"
+                    sections.length > 0
                       ? {
                           left: `calc((100% - ${(indices.length - 1) * 3}px) / ${indices.length * 2})`,
                         }
@@ -147,6 +147,7 @@ export function LessonReader({
           (lesson.id === "cards" && step === 4 ? "rank-ladder" : "")
         }
       >
+        {slide.matrix && <LessonMatrix key={step} initial={slide.matrix} />}
         {slide.stacks && <StackExample {...slide.stacks} />}
         {slide.tablePosition && <PokerTable position={slide.tablePosition} />}
         {slide.street !== undefined && <StreetCards count={slide.street} />}

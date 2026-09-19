@@ -144,3 +144,25 @@ it("сцена повторения ошибок сохраняется и по�
   saved.mistakes[0].scene = null;
   expect(validProgress(saved)).toBe(false);
 });
+
+it("очередь учитывает пас, а вопросы об улицах требуют следующего действия", () => {
+  for (let i = 0; i < 50; i++) {
+    for (const family of ["preflop", "postflop"]) {
+      const t = handFlowTask(family);
+      const order =
+        family === "preflop"
+          ? ["UTG", "HJ", "CO", "BTN", "SB", "BB"]
+          : ["SB", "BB", "UTG", "HJ", "CO", "BTN"];
+      const first = order.find((p) => !t.scene!.folded.includes(p))!;
+      expect(t.answer.startsWith(first + " —")).toBe(true);
+      expect(t.scene!.folded.length).toBeGreaterThan(0);
+    }
+    const t = handFlowTask("street");
+    expect(t.prompt).not.toContain("сколько общих карт");
+    expect(t.choices).toHaveLength(4);
+    expect(new Set(t.choices).size).toBe(4);
+    if (t.scene!.board.length === 5) expect(t.answer).toContain("Вскрытие");
+    if (t.scene!.board.length === 3)
+      expect(t.answer).toContain("тёрн; первым действует BB");
+  }
+});

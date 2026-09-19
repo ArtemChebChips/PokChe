@@ -2619,7 +2619,7 @@ body {
   margin: 20px auto;
   max-width: 370px;
 }
-.position-table svg {
+.position-table .table-layout {
   display: block;
   width: 100%;
   height: auto;
@@ -2666,53 +2666,59 @@ body {
   opacity: 0.65;
 }
 
+/* Компактный стол: места снаружи, карты и ставки на сукне. */
 .table-surface {
   position: relative;
+}
+.position-table {
+  width: 100%;
+  max-width: 430px;
+  margin: 16px auto;
+}
+.position-table .table-layout {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: hidden;
 }
 .scene-street {
   text-align: center;
   font-size: 13px;
   font-weight: 700;
-  margin-bottom: 4px;
+  margin: 0 0 6px;
 }
 .scene-board {
   position: absolute;
-  top: 46%;
-  left: 26%;
-  width: 48%;
+  top: 35%;
+  left: 19%;
+  width: 62%;
   display: flex;
-  gap: 3px;
+  gap: 4px;
   justify-content: center;
 }
-.scene-board > span:not(.card) {
-  text-align: center;
-  font-size: 11px;
-  color: #103e42;
-  padding-top: 10px;
-}
 .scene-board .card {
-  width: calc((100% - 12px) / 5);
+  width: calc((100% - 16px) / 5);
   height: auto;
   aspect-ratio: 5/7;
 }
 .scene-hands {
   display: flex;
-  gap: 18px;
+  gap: 24px;
   justify-content: center;
   text-align: center;
-  margin-top: 4px;
+  margin-top: 0;
 }
 .scene-hands > div > span {
   font-size: 12px;
   font-weight: 600;
 }
 .scene-hands .cards {
-  margin: 8px 0;
+  margin: 6px 0;
   justify-content: center;
-  gap: 6px;
+  gap: 5px;
 }
 .scene-hands .card {
-  width: 48px;
+  width: 44px;
   height: auto;
   aspect-ratio: 5/7;
 }
@@ -2720,45 +2726,149 @@ body {
   opacity: 0.45;
 }
 .scene-note {
-  font-size: 12px;
+  text-align: center;
+  font-size: 11px;
   line-height: 1.5;
   color: var(--muted);
-  margin: 10px 0;
+  margin: 8px 0 0;
 }
-
+.seat-caption {
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+}
+.seat-caption > span {
+  display: block;
+  color: var(--muted);
+  font-weight: 400;
+  margin-top: 5px;
+  font-size: 11px;
+}
 .stack-example {
-  margin: 20px 0;
-  padding: 18px;
+  margin: 18px 0;
+  padding: 16px 12px;
   background: #e6f0e9;
-  border-radius: 16px;
+  border-radius: 20px;
 }
-.stack-row + .stack-row {
-  margin-top: 18px;
-}
-.stack-row > div:first-child {
+.stack-bank {
   display: flex;
-  justify-content: space-between;
-  gap: 12px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding-bottom: 12px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid #c8d9ce;
+  font-size: 13px;
+}
+.stack-bank strong {
+  display: block;
+}
+.stack-players {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.stack-player {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
   font-size: 14px;
 }
-.stack-track {
-  height: 14px;
-  background: #cbded2;
-  border-radius: 7px;
-  margin-top: 7px;
-  overflow: hidden;
+.stack-player > strong {
+  font-size: 19px;
 }
-.stack-track > span {
-  display: block;
-  height: 100%;
-  background: #398269;
-  border-radius: inherit;
+.chip-pile {
+  position: relative;
+  width: 112px;
+  height: 72px;
 }
-.stack-row:nth-child(2) .stack-track > span {
-  background: #af8e46;
+.chip-pile img {
+  position: absolute;
+  top: 0;
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
 }
 .stack-example figcaption {
-  margin-top: 18px;
   text-align: center;
-  font-size: 14px;
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 14px;
+}
+.topbar {
+  padding-top: 3px;
+  padding-bottom: 8px;
+}
+main.main-content {
+  padding-bottom: calc(36px + env(safe-area-inset-bottom, 0px));
+}
+/* Одинаковые карты на доске и в руках, в том числе при выборе пяти из семи. */
+.table:not(.comparison-table) {
+  container-type: inline-size;
+}
+.table:not(.comparison-table) .cards {
+  gap: 7px;
+  max-width: none;
+}
+.table:not(.comparison-table) .board-cards {
+  display: flex;
+  flex-wrap: nowrap;
+}
+.table:not(.comparison-table) .card {
+  width: min(64px, calc((100cqw - 28px) / 5));
+  max-width: none;
+  height: auto;
+  aspect-ratio: 5/7;
+}
+
+.lesson-matrix {
+  margin: 16px 0;
+}
+.mini-matrix {
+  display: grid;
+  grid-template-columns: repeat(13, minmax(0, 1fr));
+  gap: 2px;
+}
+.mini-matrix > span {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  min-width: 0;
+  background: #e3eee6;
+  border-radius: 2px;
+  font-size: clamp(7px, 2vw, 10px);
+  color: #537361;
+}
+.mini-matrix .matrix-pair {
+  background: #cddfd2;
+}
+.mini-matrix .matrix-selected {
+  background: #226e58;
+  color: #fff;
+  outline: 2px solid #b99b4e;
+  outline-offset: 0;
+  font-weight: 700;
+}
+.matrix-examples {
+  display: flex;
+  gap: 8px;
+  margin: 14px 0;
+}
+.matrix-examples button {
+  flex: 1;
+  min-height: 44px;
+  border: 1px solid #c5d7c9;
+  border-radius: 12px;
+  background: #fffef9;
+  color: #244e3c;
+  font-weight: 700;
+}
+.matrix-examples button[aria-pressed="true"] {
+  background: #226e58;
+  color: white;
+}
+.lesson-matrix figcaption {
+  font-size: 13px;
+  line-height: 1.5;
 }

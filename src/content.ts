@@ -1,3 +1,5 @@
+import type { FlowScene } from "./flowScene";
+import { startingHandsSlides } from "./startingHandsLesson";
 import { stackSlides } from "./stackLesson";
 import type { StackState } from "./components/StackExample";
 import { handFlowSlides } from "./handFlowLesson";
@@ -15,7 +17,9 @@ export type Skill =
   | "texture"
   | "equity";
 export type Slide = {
+  scene?: FlowScene;
   stacks?: StackState;
+  matrix?: string;
   section?: string;
   coach?: string;
   ranking?: boolean;
@@ -198,36 +202,7 @@ export const lessons: Lesson[] = [
     subtitle: "Пары, suited, offsuit и матрица",
     skills: ["notation"],
     ready: true,
-    slides: [
-      slide(
-        "169 типов рук",
-        "Пары записываются AA, KK, 77. Для разных достоинств s означает одну масть, o — разные. Конкретных двухкарточных комбинаций 1326, типов — 169.",
-        "AKs — туз и король одной масти. AKo — разных.",
-        "Как записать A♠ K♠?",
-        ["AKs", "AKo", "AA"],
-        "AKs",
-        "s — suited, одной масти.",
-        ["As", "Ks"],
-      ),
-      slide(
-        "Диапазон вместо одной руки",
-        "Диапазон — множество возможных рук. На диагонали матрицы пары, выше диагонали — одномастные, ниже — разномастные. Одна клетка — несколько комбинаций.",
-        "У пары 6 комбинаций, у suited-руки 4, у offsuit-руки 12.",
-        "Сколько конкретных комбинаций у AKs?",
-        ["4", "12", "6"],
-        "4",
-        "По одной комбинации на каждую из четырёх мастей.",
-      ),
-      slide(
-        "Доминация",
-        "AK часто доминирует AQ: у обеих рук туз, но у первой сильнее кикер. Это не гарантия победы. Состав диапазона зависит от позиции, стеков и действий.",
-        "Диапазон открытия нельзя автоматически использовать для ответа на рейз.",
-        "Подходит ли один чарт всем стекам и позициям?",
-        ["Нет", "Да"],
-        "Нет",
-        "Условия — часть стратегии. Без проверенных данных приложение не выставляет стратегические оценки.",
-      ),
-    ],
+    slides: startingHandsSlides,
   },
   {
     id: "preflop",
